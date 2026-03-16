@@ -216,21 +216,15 @@ const SistemasDominioCom = () => {
 
               <div className="grid gap-1.5">
                 <Label htmlFor="dominioNome">Nome para domínio .com *</Label>
-                <div className="flex gap-2">
-                  <div className="flex items-center flex-1 rounded-md border border-input bg-background px-3">
-                    <Input
-                      id="dominioNome"
-                      className="border-0 px-0 focus-visible:ring-0"
-                      placeholder="meudominio"
-                      value={dominioNome}
-                      onChange={(e) => setDominioNome(e.target.value.toLowerCase())}
-                    />
-                    <span className="text-sm text-muted-foreground">.com</span>
-                  </div>
-                  <Button type="button" onClick={handleCheck} disabled={checkLoading}>
-                    {checkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                    Pesquisar
-                  </Button>
+                <div className="flex items-center rounded-md border border-input bg-background px-3">
+                  <Input
+                    id="dominioNome"
+                    className="border-0 px-0 focus-visible:ring-0"
+                    placeholder="meudominio"
+                    value={dominioNome}
+                    onChange={(e) => setDominioNome(e.target.value.toLowerCase())}
+                  />
+                  <span className="text-sm text-muted-foreground">.com</span>
                 </div>
               </div>
 
@@ -253,9 +247,15 @@ const SistemasDominioCom = () => {
                 </div>
               )}
 
-              <Button type="button" onClick={openConfirmModal} disabled={!canRegister} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Registrar domínio .com (R$ {finalPrice.toFixed(2)})
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button type="button" onClick={handleCheck} disabled={checkLoading} variant="outline">
+                  {checkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Pesquisar
+                </Button>
+                <Button type="button" onClick={openConfirmModal} disabled={!canRegister} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  Registrar domínio .com (R$ {finalPrice.toFixed(2)})
+                </Button>
+              </div>
 
               {!canRegister && totalBalance < finalPrice && (
                 <div className="flex items-center gap-2 text-destructive text-xs">
