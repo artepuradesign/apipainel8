@@ -171,10 +171,21 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
     return `/module/${module.slug}`;
   };
 
+  // Comparação financeira em centavos para evitar erro de ponto flutuante
+  const toCents = (value: number) => Math.round((Number(value) || 0) * 100);
+  const hasEnoughBalance = (balance: number, price: number) => toCents(balance) >= toCents(price);
+  const getMissingAmount = (price: number, balance: number) => Math.max((toCents(price) - toCents(balance)) / 100, 0);
+
   // Handler para compra direta via PIX no overlay do módulo
   const handleDirectPurchase = async (e: React.MouseEvent, amount: number, module: any) => {
     e.stopPropagation();
-    const remaining = Math.max(amount - totalAvailableBalance, 0.01);
+    const remaining = getMissingAmount(amount, totalAvailableBalance);
+
+    if (remaining <= 0) {
+      navigate(getModulePageRoute(module));
+      return;
+    }
+
     setPixModuleAmount(remaining);
     
     const moduleRoute = getModulePageRoute(module);
@@ -337,8 +348,10 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
     // Para módulos de pedidos (PDF), permitir acesso mesmo sem saldo se tem registros
     const isPdfModule = moduleRoute.includes('/pdf-personalizado') || moduleRoute.includes('/pdf-rg');
     
-    if (totalAvailableBalance < finalPrice && !userHasRecords && !isPdfModule) {
-      const remaining = Math.max(finalPrice - totalAvailableBalance, 0.01);
+    const hasSufficientBalance = hasEnoughBalance(totalAvailableBalance, finalPrice);
+
+    if (!hasSufficientBalance && !userHasRecords && !isPdfModule) {
+      const remaining = getMissingAmount(finalPrice, totalAvailableBalance);
       toast.error(
         `Saldo insuficiente para ${module.title}! Valor necessário: R$ ${finalPrice.toFixed(2)}`,
         {
@@ -351,7 +364,7 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
       return;
     }
 
-    if (totalAvailableBalance < finalPrice && (userHasRecords || isPdfModule)) {
+    if (!hasSufficientBalance && (userHasRecords || isPdfModule)) {
       toast.info(
         `Você pode visualizar seu histórico em ${module.title}, mas precisa de saldo para novos pedidos.`,
         { duration: 4000 }
@@ -454,7 +467,7 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
                       
                       
                       {/* Overlay para saldo insuficiente - botão Comprar verde */}
-                      {hasLoadedOnce && !isBalanceLoading && totalAvailableBalance < finalDiscountedPrice && !userHasRecordsInThis && (
+                      {hasLoadedOnce && !isBalanceLoading && !hasEnoughBalance(totalAvailableBalance, finalDiscountedPrice) && !userHasRecordsInThis && (
                         <div className="absolute inset-0 bg-black/60 dark:bg-black/70 rounded-lg z-50 flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <div className="text-center text-white bg-black/80 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/20 shadow-2xl w-[85%] max-w-[170px]">
                             <Lock className="h-5 w-5 mx-auto mb-1.5 text-white" />
