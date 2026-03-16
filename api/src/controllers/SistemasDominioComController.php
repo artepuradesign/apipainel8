@@ -73,4 +73,29 @@ class SistemasDominioComController {
             Response::error($e->getMessage(), 400);
         }
     }
+
+    public function obter(int $id) {
+        try {
+            $userId = AuthMiddleware::getCurrentUserId();
+            if (!$userId) {
+                Response::error('Usuário não autenticado', 401);
+                return;
+            }
+
+            if ($id <= 0) {
+                Response::error('ID inválido', 400);
+                return;
+            }
+
+            $row = $this->model->findByIdForUser($id, (int)$userId);
+            if (!$row) {
+                Response::notFound('Registro não encontrado');
+                return;
+            }
+
+            Response::success($row, 'Registro carregado com sucesso');
+        } catch (Exception $e) {
+            Response::error('Erro ao carregar registro: ' . $e->getMessage(), 500);
+        }
+    }
 }
