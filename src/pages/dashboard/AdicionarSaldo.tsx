@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import AmountSelection from '@/components/payment/AmountSelection';
 import PixQRCodeModal from '@/components/payment/PixQRCodeModal';
+import CreditCardModal from '@/components/payment/CreditCardModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDataApi } from '@/hooks/useUserDataApi';
 import { usePixPaymentFlow } from '@/hooks/usePixPaymentFlow';
@@ -10,12 +11,13 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { CreditCard, Zap, Ticket, Wallet } from 'lucide-react';
+import { CreditCard, Ticket, Wallet } from 'lucide-react';
 import DashboardTitleCard from '@/components/dashboard/DashboardTitleCard';
 import QRCode from 'react-qr-code';
 import { formatBrazilianCurrency } from '@/utils/historicoUtils';
 import { usePaymentPolling } from '@/hooks/usePaymentPolling';
 import { API_BASE_URL } from '@/config/apiConfig';
+import { apiRequest, fetchApiConfig } from '@/config/api';
 
 const AdicionarSaldo = () => {
   const { user } = useAuth();
@@ -30,6 +32,8 @@ const AdicionarSaldo = () => {
   const [customAmount, setCustomAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<string>('pix');
   const [showPixModal, setShowPixModal] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [cardLoading, setCardLoading] = useState(false);
 
   // Verificação automática de TODOS os pagamentos pendentes (não só o atual)
   usePaymentPolling({
