@@ -309,10 +309,10 @@ const SistemasDominioCom = () => {
                 </Button>
               </div>
 
-              {!canRegister && totalBalance < finalPrice && (
+              {!hasSufficientBalance && (
                 <div className="flex items-center gap-2 text-destructive text-xs">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Saldo insuficiente. Necessário: R$ {finalPrice.toFixed(2)}</span>
+                  <span>Saldo insuficiente. Gere o PIX para pagar R$ {finalPrice.toFixed(2).replace('.', ',')}</span>
                 </div>
               )}
             </CardContent>
