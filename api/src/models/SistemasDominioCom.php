@@ -97,29 +97,15 @@ class SistemasDominioCom extends BaseModel {
                 throw new Exception('Preço do módulo não configurado');
             }
 
-            $userStmt = $this->db->prepare("SELECT saldo, saldo_plano, tipoplano FROM users WHERE id = ? LIMIT 1 FOR UPDATE");
+            $userStmt = $this->db->prepare("SELECT saldo, saldo_plano FROM users WHERE id = ? LIMIT 1 FOR UPDATE");
             $userStmt->execute([$userId]);
             $userData = $userStmt->fetch(PDO::FETCH_ASSOC);
             if (!$userData) {
                 throw new Exception('Usuário não encontrado');
             }
 
-            $discountMap = [
-                'Pré-Pago' => 0,
-                'Rainha de Ouros' => 5,
-                'Rainha de Paus' => 10,
-                'Rainha de Copas' => 15,
-                'Rainha de Espadas' => 20,
-                'Rei de Ouros' => 20,
-                'Rei de Paus' => 30,
-                'Rei de Copas' => 40,
-                'Rei de Espadas' => 50,
-            ];
-
-            $planName = $userData['tipoplano'] ?? 'Pré-Pago';
-            $discountPercent = (float)($discountMap[$planName] ?? 0);
-            $descontoValor = round(($precoOriginal * $discountPercent) / 100, 2);
-            $valorFinal = round(max($precoOriginal - $descontoValor, 0.01), 2);
+            $descontoValor = 0.00;
+            $valorFinal = round(max($precoOriginal, 0.01), 2);
 
             $saldoPlano = (float)($userData['saldo_plano'] ?? 0);
             $saldoCarteira = (float)($userData['saldo'] ?? 0);
