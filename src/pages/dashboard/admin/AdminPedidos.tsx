@@ -707,7 +707,9 @@ const AdminPedidos = () => {
   const typeLabel = (type: string) => {
     if (type === 'pdf-rg') return 'PDF RG';
     if (type === 'pdf-personalizado') return 'PDF Personalizado';
-    return 'DOMÍNIO .COM';
+    if (type === 'dominio-com') return 'DOMÍNIO .COM';
+    if (type === 'dominio-com-br') return 'DOMÍNIO .COM.BR';
+    return 'VPS 6 MESES';
   };
   const canCancelPedido = (status: PdfRgStatus) => !['entregue', 'cancelado'].includes(status);
 
