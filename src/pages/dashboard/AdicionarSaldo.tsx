@@ -217,6 +217,11 @@ const AdicionarSaldo = () => {
       return;
     }
 
+    if (paymentMethod === 'card') {
+      setShowCreditModal(true);
+      return;
+    }
+
     // Criar pagamento PIX
     const pixData = await createPixPayment(valorFinal, userData);
     if (pixData) {
@@ -258,6 +263,73 @@ const AdicionarSaldo = () => {
       
       // Salvar ID do toast para poder cancelá-lo depois
       setPaymentToastId(toastId);
+    }
+  };
+
+  const handleCardPayment = async (cardData?: {
+    cardNumber: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+    cardName: string;
+  }) => {
+    if (!cardData) {
+      toast.error('Dados do cartão inválidos');
+      return;
+    }
+
+    const valorFinal = Math.max(valorFinalPagamento, 0);
+    if (valorFinal <= 0) {
+      toast.error('Valor inválido para pagamento');
+      return;
+    }
+
+    if (!userData?.email || !userData?.cpf) {
+      toast.error('Complete seu cadastro (email e CPF) para pagar com cartão');
+      return;
+    }
+
+    setCardLoading(true);
+
+    try {
+      await fetchApiConfig();
+      const response = await apiRequest<any>('/mercadopago/create-card-payment.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: user?.id || null,
+          transactionAmount: valorFinal.toFixed(2),
+          email: userData.email,
+          identificationType: 'CPF',
+          identificationNumber: String(userData.cpf).replace(/\D/g, ''),
+          cardholderName: cardData.cardName,
+          cardNumber: cardData.cardNumber.replace(/\s/g, ''),
+          expirationMonth: cardData.expiryMonth,
+          expirationYear: cardData.expiryYear,
+          securityCode: cardData.cvv,
+          installments: 1,
+          description: 'Recarga de Saldo'
+        })
+      });
+
+      if (!response?.success) {
+        toast.error(response?.message || response?.error || 'Não foi possível processar o cartão');
+        return;
+      }
+
+      const status = response?.data?.status;
+      if (status === 'approved') {
+        toast.success('Pagamento aprovado! Saldo adicionado com sucesso.');
+        setShowCreditModal(false);
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1200);
+      } else {
+        toast.info(`Pagamento retornou status: ${status || 'em análise'}`);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao processar pagamento com cartão');
+    } finally {
+      setCardLoading(false);
     }
   };
 
