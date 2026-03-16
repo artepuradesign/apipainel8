@@ -57,9 +57,7 @@ const SistemasDominioCom = () => {
     return getModulePrice(MODULE_ROUTE);
   }, [currentModule?.price]);
 
-  const { discountedPrice: finalPrice } = hasActiveSubscription && modulePrice > 0
-    ? calculateSubscriptionDiscount(modulePrice)
-    : { discountedPrice: modulePrice };
+  const finalPrice = modulePrice;
 
   const totalBalance = (balance.saldo || 0) + (balance.saldo_plano || 0);
   const canRegister = Boolean(
