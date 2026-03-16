@@ -35,6 +35,18 @@ class SistemasDominioCom extends BaseModel {
         return $row ?: null;
     }
 
+    public function findByIdForUser(int $id, int $userId): ?array {
+        $stmt = $this->db->prepare(
+            "SELECT id, module_id, user_id, nome_solicitante, dominio_nome, dominio_completo, status, valor_cobrado, desconto_aplicado, saldo_usado, created_at, updated_at
+             FROM {$this->table}
+             WHERE id = ? AND user_id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$id, $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
     public function checkAvailability(string $domainInput): array {
         $domainName = $this->normalizeDomainName($domainInput);
         $fullDomain = $this->buildFullDomain($domainName);
