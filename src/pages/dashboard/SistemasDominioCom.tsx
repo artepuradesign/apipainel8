@@ -26,6 +26,7 @@ const SistemasDominioCom = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { userData } = useUserDataApi();
   const { modules } = useApiModules();
   const { balance, loadBalance: reloadBalance } = useWalletBalance();
   const {
@@ -34,12 +35,14 @@ const SistemasDominioCom = () => {
     discountPercentage,
     calculateDiscountedPrice: calculateSubscriptionDiscount,
   } = useUserSubscription();
+  const { createPixPayment, checkPaymentStatus, generateNewPayment, checkingPayment, pixResponse, loading: pixLoading } = usePixPaymentFlow();
 
   const [nomeSolicitante, setNomeSolicitante] = useState('');
   const [dominioNome, setDominioNome] = useState('');
   const [checkLoading, setCheckLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
   const [availability, setAvailability] = useState<{ dominioCompleto: string; disponivel: boolean; message: string } | null>(null);
   const [registros, setRegistros] = useState<SistemaDominioComRegistro[]>([]);
   const [registrosLoading, setRegistrosLoading] = useState(false);
