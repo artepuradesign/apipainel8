@@ -118,17 +118,25 @@ export const userApiService = {
     try {
       // Usar endpoint da wallet que já existe
       const response = await apiRequest<any>('/wallet/balance');
-      
-      if (response.success && response.data) {
-        const balanceData = response.data;
-        
-        // Transformar para o formato esperado
+
+      if (response.success) {
+        // Compatibilidade com múltiplos formatos de resposta
+        const raw = response.data ?? response;
+        const rawBalance = raw?.user_balance ?? raw?.data?.user_balance ?? raw?.data ?? raw;
+
+        const saldo = Number(rawBalance?.saldo ?? 0) || 0;
+        const saldoPlano = Number(rawBalance?.saldo_plano ?? 0) || 0;
+        const totalFromApi = Number(rawBalance?.total);
+        const total = Number.isFinite(totalFromApi) && totalFromApi >= 0
+          ? totalFromApi
+          : saldo + saldoPlano;
+
         const userBalance: UserBalance = {
-          saldo: balanceData.user_balance?.saldo || 0,
-          saldo_plano: balanceData.user_balance?.saldo_plano || 0,
-          total: balanceData.user_balance?.total || 0
+          saldo,
+          saldo_plano: saldoPlano,
+          total
         };
-        
+
         return {
           success: true,
           data: userBalance
