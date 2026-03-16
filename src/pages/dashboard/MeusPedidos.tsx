@@ -494,7 +494,7 @@ const MeusPedidos = () => {
   const canCancelPedido = (status: PdfRgStatus) => ['realizado', 'pagamento_confirmado'].includes(status);
 
   const handleCancelPedido = async (pedido: UnifiedPedido) => {
-    if (!canCancelPedido(pedido.status)) return;
+    if (!canCancelPedido(pedido.status) || pedido.type === 'dominio-com') return;
     const pedidoKey = `${pedido.type}-${pedido.id}`;
     if (!confirm(t.confirmCancel)) return;
 
