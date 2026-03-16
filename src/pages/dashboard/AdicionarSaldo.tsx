@@ -143,7 +143,8 @@ const AdicionarSaldo = () => {
   }, [showPixModal, pixResponse?.payment_id, paymentToastId]);
 
   const paymentMethods = [
-    { id: 'pix', name: 'PIX', description: 'Aprovação instantânea' }
+    { id: 'pix', name: 'PIX', description: 'Aprovação instantânea', icon: Wallet, badge: 'Instantâneo' },
+    { id: 'card', name: 'Cartão de Crédito', description: 'Confirmação imediata', icon: CreditCard, badge: 'Online' }
   ];
 
   const finalAmount = selectedAmount > 0 ? selectedAmount : parseFloat(customAmount) || 0;
