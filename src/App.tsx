@@ -174,6 +174,7 @@ import LoginGmail from '@/pages/dashboard/LoginGmail';
 import LoginRenner from '@/pages/dashboard/LoginRenner';
 import PdfRg from '@/pages/dashboard/PdfRg';
 import PdfPersonalizado from '@/pages/dashboard/PdfPersonalizado';
+import SistemasDominioCom from '@/pages/dashboard/SistemasDominioCom';
 import MeusPedidos from '@/pages/dashboard/MeusPedidos';
 import ConsultarCpfHistorico from '@/pages/dashboard/ConsultarCpfHistorico';
 import Preferencias from '@/pages/dashboard/Preferencias';
