@@ -378,6 +378,16 @@ const SistemasDominioCom = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PixQRCodeModal
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        amount={Number(finalPrice.toFixed(2))}
+        onPaymentConfirm={handlePixPaymentConfirm}
+        isProcessing={checkingPayment || pixLoading}
+        pixData={pixResponse}
+        onGenerateNew={handleGenerateNewPix}
+      />
     </div>
   );
 };
