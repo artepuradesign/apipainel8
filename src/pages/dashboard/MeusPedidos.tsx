@@ -309,9 +309,10 @@ const MeusPedidos = () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const [resRg, resPersonalizado] = await Promise.all([
+      const [resRg, resPersonalizado, resDominio] = await Promise.all([
         pdfRgService.listar({ limit: 50, user_id: Number(user.id) }),
         editarPdfService.listar({ limit: 50, user_id: Number(user.id) }),
+        sistemasDominioComService.listMine({ limit: 50, offset: 0 }),
       ]);
 
       const allPedidos: UnifiedPedido[] = [];
