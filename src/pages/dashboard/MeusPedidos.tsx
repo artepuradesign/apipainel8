@@ -484,7 +484,13 @@ const MeusPedidos = () => {
     }
   };
 
-  const getTypeLabel = (type: string) => type === 'pdf-rg' ? t.typeRg : t.typeCustom;
+  const getTypeLabel = (type: string) => (
+    type === 'pdf-rg'
+      ? t.typeRg
+      : type === 'pdf-personalizado'
+      ? t.typeCustom
+      : t.typeDomain
+  );
   const canCancelPedido = (status: PdfRgStatus) => ['realizado', 'pagamento_confirmado'].includes(status);
 
   const handleCancelPedido = async (pedido: UnifiedPedido) => {
