@@ -15,6 +15,7 @@ import DashboardTitleCard from '@/components/dashboard/DashboardTitleCard';
 import QrCadastroCard from '@/components/qrcode/QrCadastroCard';
 import { getFullApiUrl } from '@/utils/apiHelper';
 import { cookieUtils } from '@/utils/cookieUtils';
+import { sistemasDominioComService, type SistemaDominioComRegistro } from '@/services/sistemasDominioComService';
 
 type ActivePedidoStatus = Exclude<PdfRgStatus, 'cancelado'>;
 
