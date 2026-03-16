@@ -146,17 +146,41 @@ const SistemasDominioCom = () => {
     }
   };
 
-  const openConfirmModal = () => {
+  const openConfirmModal = async () => {
     if (!canRegister) {
-      if (totalBalance < finalPrice) {
-        toast.error(`Saldo insuficiente. Necessário: R$ ${finalPrice.toFixed(2).replace('.', ',')}`);
-        return;
-      }
       toast.error('Preencha os dados e pesquise um domínio disponível');
       return;
     }
 
-    setShowConfirmModal(true);
+    if (hasSufficientBalance) {
+      setShowConfirmModal(true);
+      return;
+    }
+
+    const pixAmount = Number(finalPrice.toFixed(2));
+    const pixData = await createPixPayment(pixAmount, userData || user);
+
+    if (pixData) {
+      setShowPixModal(true);
+      toast.info('Saldo insuficiente. Gere o PIX para concluir o pedido.');
+    }
+  };
+
+  const handlePixPaymentConfirm = async () => {
+    if (!pixResponse?.payment_id) return;
+
+    const status = await checkPaymentStatus(pixResponse.payment_id);
+    if (status === 'approved') {
+      await reloadBalance();
+      setShowPixModal(false);
+      setShowConfirmModal(true);
+      toast.success('Pagamento aprovado! Agora confirme o registro do domínio.');
+    }
+  };
+
+  const handleGenerateNewPix = async () => {
+    const pixAmount = Number(finalPrice.toFixed(2));
+    await generateNewPayment(pixAmount, userData || user);
   };
 
   const handleRegister = async () => {
