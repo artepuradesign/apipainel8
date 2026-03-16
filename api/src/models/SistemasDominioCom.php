@@ -163,6 +163,9 @@ class SistemasDominioCom extends BaseModel {
             $updateUserStmt = $this->db->prepare("UPDATE users SET saldo = ?, saldo_plano = ?, saldo_atualizado = 1, updated_at = NOW() WHERE id = ?");
             $updateUserStmt->execute([$novoSaldoCarteira, $novoSaldoPlano, $userId]);
 
+            $this->syncUserWalletBalance($userId, 'main', $novoSaldoCarteira);
+            $this->syncUserWalletBalance($userId, 'plan', $novoSaldoPlano);
+
             $description = "Registro domínio .COM: {$availability['dominio_completo']}";
 
             if ($debitoPlano > 0) {
