@@ -202,7 +202,7 @@ const AdicionarSaldo = () => {
   };
 
   const canProceed = () => {
-    return finalAmount > 0 && paymentMethod === 'pix';
+    return finalAmount > 0 && ['pix', 'card'].includes(paymentMethod);
   };
 
   const handlePayment = async () => {
