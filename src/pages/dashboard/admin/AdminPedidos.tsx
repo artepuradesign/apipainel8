@@ -636,7 +636,11 @@ const AdminPedidos = () => {
     setPdfFile(file);
   };
 
-  const typeLabel = (type: string) => type === 'pdf-rg' ? 'PDF RG' : 'PDF Personalizado';
+  const typeLabel = (type: string) => {
+    if (type === 'pdf-rg') return 'PDF RG';
+    if (type === 'pdf-personalizado') return 'PDF Personalizado';
+    return 'DOMÍNIO .COM';
+  };
   const canCancelPedido = (status: PdfRgStatus) => !['entregue', 'cancelado'].includes(status);
 
   const handleCancelPedido = async (pedido: UnifiedPedido | null) => {
