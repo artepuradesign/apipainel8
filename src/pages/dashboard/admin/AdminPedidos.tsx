@@ -10,12 +10,14 @@ import { toast } from 'sonner';
 import { pdfRgService, PdfRgPedido, PdfRgStatus } from '@/services/pdfRgService';
 import { editarPdfService, EditarPdfPedido } from '@/services/pdfPersonalizadoService';
 import { qrcodeRegistrationsService, type QrRegistration } from '@/services/qrcodeRegistrationsService';
-import { Search, Eye, Trash2, RefreshCw, Download, Loader2, Upload, Package, DollarSign, Hammer, CheckCircle, X, FileEdit, Ban, Globe } from 'lucide-react';
+import { Search, Eye, Trash2, RefreshCw, Download, Loader2, Upload, Package, DollarSign, Hammer, CheckCircle, X, FileEdit, Ban, Globe, Server } from 'lucide-react';
 import DashboardTitleCard from '@/components/dashboard/DashboardTitleCard';
 import QrCadastroCard from '@/components/qrcode/QrCadastroCard';
 import { getFullApiUrl } from '@/utils/apiHelper';
 import { cookieUtils } from '@/utils/cookieUtils';
 import { sistemasDominioComService, type SistemaDominioComRegistro } from '@/services/sistemasDominioComService';
+import { sistemasDominioComBrService, type SistemaDominioComBrRegistro } from '@/services/sistemasDominioComBrService';
+import { sistemasHospedagemVps6Service, type SistemaHospedagemVps6Registro } from '@/services/sistemasHospedagemVps6Service';
 
 type ActivePedidoStatus = Exclude<PdfRgStatus, 'cancelado'>;
 
