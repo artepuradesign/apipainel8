@@ -336,7 +336,7 @@ const SistemasDominioCom = () => {
             <Button variant="outline" onClick={() => setShowConfirmModal(false)} disabled={submitLoading}>
               Cancelar
             </Button>
-            <Button onClick={handleRegister} disabled={submitLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={handleRegister} disabled={submitLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
               {submitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Confirmar e registrar
             </Button>
