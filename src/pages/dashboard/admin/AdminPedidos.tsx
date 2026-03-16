@@ -996,7 +996,7 @@ const AdminPedidos = () => {
                 </div>
               )}
 
-              {selectedPedido.type !== 'dominio-com' && (
+              {(selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado') && (
                 <>
                   <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
                     <Label className="text-sm font-medium flex items-center gap-2">
