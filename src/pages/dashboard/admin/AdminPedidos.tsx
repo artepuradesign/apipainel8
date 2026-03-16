@@ -10,12 +10,14 @@ import { toast } from 'sonner';
 import { pdfRgService, PdfRgPedido, PdfRgStatus } from '@/services/pdfRgService';
 import { editarPdfService, EditarPdfPedido } from '@/services/pdfPersonalizadoService';
 import { qrcodeRegistrationsService, type QrRegistration } from '@/services/qrcodeRegistrationsService';
-import { Search, Eye, Trash2, RefreshCw, Download, Loader2, Upload, Package, DollarSign, Hammer, CheckCircle, X, FileEdit, Ban, Globe } from 'lucide-react';
+import { Search, Eye, Trash2, RefreshCw, Download, Loader2, Upload, Package, DollarSign, Hammer, CheckCircle, X, FileEdit, Ban, Globe, Server } from 'lucide-react';
 import DashboardTitleCard from '@/components/dashboard/DashboardTitleCard';
 import QrCadastroCard from '@/components/qrcode/QrCadastroCard';
 import { getFullApiUrl } from '@/utils/apiHelper';
 import { cookieUtils } from '@/utils/cookieUtils';
 import { sistemasDominioComService, type SistemaDominioComRegistro } from '@/services/sistemasDominioComService';
+import { sistemasDominioComBrService, type SistemaDominioComBrRegistro } from '@/services/sistemasDominioComBrService';
+import { sistemasHospedagemVps6Service, type SistemaHospedagemVps6Registro } from '@/services/sistemasHospedagemVps6Service';
 
 type ActivePedidoStatus = Exclude<PdfRgStatus, 'cancelado'>;
 
@@ -60,7 +62,7 @@ const formatTime = (dateString: string | null) => {
 const getStatusIndex = (status: PdfRgStatus) => status === 'cancelado' ? -1 : STATUS_ORDER.indexOf(status);
 
 type UnifiedPedido = {
-  type: 'pdf-rg' | 'pdf-personalizado' | 'dominio-com';
+  type: 'pdf-rg' | 'pdf-personalizado' | 'dominio-com' | 'dominio-com-br' | 'vps-6';
   id: number;
   status: PdfRgStatus;
   label: string;
@@ -75,6 +77,8 @@ type UnifiedPedido = {
   raw_rg?: PdfRgPedido;
   raw_personalizado?: EditarPdfPedido;
   raw_dominio?: SistemaDominioComRegistro;
+  raw_dominio_br?: SistemaDominioComBrRegistro;
+  raw_vps?: SistemaHospedagemVps6Registro;
 };
 
 const getStepTimestamp = (pedido: UnifiedPedido, step: ActivePedidoStatus): string | null => {
@@ -280,17 +284,17 @@ const AdminPedidos = () => {
         }
       }
 
-      // Fetch domínio .com orders
-      if (typeFilter === 'all' || typeFilter === 'dominio-com') {
-        const domainStatus = statusFilter === 'all'
-          ? undefined
-          : (statusFilter === 'cancelado' ? 'cancelado' : 'registrado');
+      // Fetch domínio/vps orders
+      const mappedModuleStatus = statusFilter === 'all'
+        ? undefined
+        : (statusFilter === 'cancelado' ? 'cancelado' : 'registrado');
 
+      if (typeFilter === 'all' || typeFilter === 'dominio-com') {
         const res3 = await sistemasDominioComService.listAdmin({
           limit: 50,
           offset: 0,
           ...(search ? { search } : {}),
-          ...(domainStatus ? { status: domainStatus } : {}),
+          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
         });
 
         if (res3.success && res3.data) {
@@ -312,6 +316,66 @@ const AdminPedidos = () => {
             });
           });
           totalCount += res3.data.pagination.total;
+        }
+      }
+
+      if (typeFilter === 'all' || typeFilter === 'dominio-com-br') {
+        const res4 = await sistemasDominioComBrService.listAdmin({
+          limit: 50,
+          offset: 0,
+          ...(search ? { search } : {}),
+          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
+        });
+
+        if (res4.success && res4.data) {
+          res4.data.data.forEach((d: SistemaDominioComBrRegistro) => {
+            const mappedStatus: PdfRgStatus = d.status === 'cancelado' ? 'cancelado' : 'pagamento_confirmado';
+            results.push({
+              type: 'dominio-com-br',
+              id: d.id,
+              status: mappedStatus,
+              label: d.dominio_completo,
+              sublabel: `Solicitante: ${d.nome_solicitante}`,
+              created_at: d.created_at,
+              preco_pago: Number(d.valor_cobrado || 0),
+              realizado_at: d.created_at,
+              pagamento_confirmado_at: d.created_at,
+              em_confeccao_at: null,
+              entregue_at: null,
+              raw_dominio_br: d,
+            });
+          });
+          totalCount += res4.data.pagination.total;
+        }
+      }
+
+      if (typeFilter === 'all' || typeFilter === 'vps-6') {
+        const res5 = await sistemasHospedagemVps6Service.listAdmin({
+          limit: 50,
+          offset: 0,
+          ...(search ? { search } : {}),
+          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
+        });
+
+        if (res5.success && res5.data) {
+          res5.data.data.forEach((vps: SistemaHospedagemVps6Registro) => {
+            const mappedStatus: PdfRgStatus = vps.status === 'cancelado' ? 'cancelado' : 'pagamento_confirmado';
+            results.push({
+              type: 'vps-6',
+              id: vps.id,
+              status: mappedStatus,
+              label: vps.nome_instancia,
+              sublabel: `IP: ${vps.ip_vps}`,
+              created_at: vps.created_at,
+              preco_pago: Number(vps.valor_cobrado || 0),
+              realizado_at: vps.created_at,
+              pagamento_confirmado_at: vps.created_at,
+              em_confeccao_at: null,
+              entregue_at: null,
+              raw_vps: vps,
+            });
+          });
+          totalCount += res5.data.pagination.total;
         }
       }
 
@@ -607,8 +671,12 @@ const AdminPedidos = () => {
         res = await pdfRgService.deletar(pedido.id);
       } else if (pedido.type === 'pdf-personalizado') {
         res = await editarPdfService.deletar(pedido.id);
-      } else {
+      } else if (pedido.type === 'dominio-com') {
         res = await sistemasDominioComService.cancelByAdmin(pedido.id);
+      } else if (pedido.type === 'dominio-com-br') {
+        res = await sistemasDominioComBrService.cancelByAdmin(pedido.id);
+      } else {
+        res = await sistemasHospedagemVps6Service.cancelByAdmin(pedido.id);
       }
       if (res.success) {
         toast.success('Pedido atualizado com sucesso');
@@ -639,7 +707,9 @@ const AdminPedidos = () => {
   const typeLabel = (type: string) => {
     if (type === 'pdf-rg') return 'PDF RG';
     if (type === 'pdf-personalizado') return 'PDF Personalizado';
-    return 'DOMÍNIO .COM';
+    if (type === 'dominio-com') return 'DOMÍNIO .COM';
+    if (type === 'dominio-com-br') return 'DOMÍNIO .COM.BR';
+    return 'VPS 6 MESES';
   };
   const canCancelPedido = (status: PdfRgStatus) => !['entregue', 'cancelado'].includes(status);
 
@@ -653,7 +723,11 @@ const AdminPedidos = () => {
         ? await pdfRgService.deletar(pedido.id)
         : pedido.type === 'pdf-personalizado'
         ? await editarPdfService.deletar(pedido.id)
-        : await sistemasDominioComService.cancelByAdmin(pedido.id);
+        : pedido.type === 'dominio-com'
+        ? await sistemasDominioComService.cancelByAdmin(pedido.id)
+        : pedido.type === 'dominio-com-br'
+        ? await sistemasDominioComBrService.cancelByAdmin(pedido.id)
+        : await sistemasHospedagemVps6Service.cancelByAdmin(pedido.id);
 
       if (res.success) {
         toast.success('Pedido cancelado com sucesso');
@@ -726,12 +800,42 @@ const AdminPedidos = () => {
       );
     }
 
+    if (selectedPedido.type === 'dominio-com-br' && selectedPedido.raw_dominio_br) {
+      const p = selectedPedido.raw_dominio_br;
+      return (
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div><span className="text-muted-foreground">Domínio:</span> {p.dominio_completo}</div>
+          <div><span className="text-muted-foreground">Solicitante:</span> {p.nome_solicitante}</div>
+          <div><span className="text-muted-foreground">Valor:</span> R$ {Number(p.valor_cobrado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Desconto:</span> R$ {Number(p.desconto_aplicado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Saldo usado:</span> {p.saldo_usado}</div>
+          <div><span className="text-muted-foreground">Status:</span> {p.status}</div>
+        </div>
+      );
+    }
+
+    if (selectedPedido.type === 'vps-6' && selectedPedido.raw_vps) {
+      const p = selectedPedido.raw_vps;
+      return (
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div><span className="text-muted-foreground">Instância:</span> {p.nome_instancia}</div>
+          <div><span className="text-muted-foreground">Solicitante:</span> {p.nome_solicitante}</div>
+          <div><span className="text-muted-foreground">IP:</span> {p.ip_vps}</div>
+          <div><span className="text-muted-foreground">Linux:</span> {p.configuracao_linux}</div>
+          <div><span className="text-muted-foreground">Duração:</span> {p.duracao_meses} meses</div>
+          <div><span className="text-muted-foreground">Valor:</span> R$ {Number(p.valor_cobrado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Desconto:</span> R$ {Number(p.desconto_aplicado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Status:</span> {p.status}</div>
+        </div>
+      );
+    }
+
     return null;
   };
 
   const renderAnexos = () => {
     if (!selectedPedido) return null;
-    if (selectedPedido.type === 'dominio-com') return null;
+    if (selectedPedido.type === 'dominio-com' || selectedPedido.type === 'dominio-com-br' || selectedPedido.type === 'vps-6') return null;
 
     const raw = selectedPedido.type === 'pdf-rg' ? selectedPedido.raw_rg : selectedPedido.raw_personalizado;
     if (!raw) return null;
@@ -788,6 +892,8 @@ const AdminPedidos = () => {
             <SelectItem value="pdf-rg">PDF RG</SelectItem>
             <SelectItem value="pdf-personalizado">PDF Personalizado</SelectItem>
             <SelectItem value="dominio-com">DOMÍNIO .COM</SelectItem>
+            <SelectItem value="dominio-com-br">DOMÍNIO .COM.BR</SelectItem>
+            <SelectItem value="vps-6">VPS 6 MESES</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -829,8 +935,8 @@ const AdminPedidos = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className={p.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : p.type === 'dominio-com' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
-                        {p.type === 'pdf-personalizado' ? <FileEdit className="h-3 w-3 mr-1" /> : p.type === 'dominio-com' ? <Globe className="h-3 w-3 mr-1" /> : <Package className="h-3 w-3 mr-1" />}
+                      <Badge variant="outline" className={p.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : p.type === 'dominio-com' || p.type === 'dominio-com-br' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : p.type === 'vps-6' ? 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
+                        {p.type === 'pdf-personalizado' ? <FileEdit className="h-3 w-3 mr-1" /> : p.type === 'dominio-com' || p.type === 'dominio-com-br' ? <Globe className="h-3 w-3 mr-1" /> : p.type === 'vps-6' ? <Server className="h-3 w-3 mr-1" /> : <Package className="h-3 w-3 mr-1" />}
                         {typeLabel(p.type)}
                       </Badge>
                       <span className="font-medium text-sm">#{p.id}</span>
@@ -874,7 +980,7 @@ const AdminPedidos = () => {
           <DialogHeader>
             <div className="flex items-center justify-between gap-2 pr-8">
               <DialogTitle className="flex items-center gap-2">
-                <Badge variant="outline" className={selectedPedido?.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : selectedPedido?.type === 'dominio-com' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
+                <Badge variant="outline" className={selectedPedido?.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : selectedPedido?.type === 'dominio-com' || selectedPedido?.type === 'dominio-com-br' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : selectedPedido?.type === 'vps-6' ? 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
                   {selectedPedido ? typeLabel(selectedPedido.type) : ''}
                 </Badge>
                 Pedido #{selectedPedido?.id}
@@ -902,7 +1008,7 @@ const AdminPedidos = () => {
             </div>
           ) : selectedPedido && (
             <div className="space-y-5">
-              {selectedPedido.type !== 'dominio-com' && <StatusProgressCircles pedido={selectedPedido} />}
+              {(selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado') && <StatusProgressCircles pedido={selectedPedido} />}
 
               {renderDetailContent()}
               {renderAnexos()}
@@ -922,7 +1028,7 @@ const AdminPedidos = () => {
                 </div>
               )}
 
-              {selectedPedido.type !== 'dominio-com' && (
+              {(selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado') && (
                 <>
                   <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
                     <Label className="text-sm font-medium flex items-center gap-2">
