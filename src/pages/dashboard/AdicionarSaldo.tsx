@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import AmountSelection from '@/components/payment/AmountSelection';
 import PixQRCodeModal from '@/components/payment/PixQRCodeModal';
+import CreditCardModal from '@/components/payment/CreditCardModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDataApi } from '@/hooks/useUserDataApi';
 import { usePixPaymentFlow } from '@/hooks/usePixPaymentFlow';
@@ -10,12 +11,13 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { CreditCard, Zap, Ticket, Wallet } from 'lucide-react';
+import { CreditCard, Ticket, Wallet } from 'lucide-react';
 import DashboardTitleCard from '@/components/dashboard/DashboardTitleCard';
 import QRCode from 'react-qr-code';
 import { formatBrazilianCurrency } from '@/utils/historicoUtils';
 import { usePaymentPolling } from '@/hooks/usePaymentPolling';
 import { API_BASE_URL } from '@/config/apiConfig';
+import { apiRequest, fetchApiConfig } from '@/config/api';
 
 const AdicionarSaldo = () => {
   const { user } = useAuth();
@@ -30,6 +32,8 @@ const AdicionarSaldo = () => {
   const [customAmount, setCustomAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<string>('pix');
   const [showPixModal, setShowPixModal] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [cardLoading, setCardLoading] = useState(false);
 
   // Verificação automática de TODOS os pagamentos pendentes (não só o atual)
   usePaymentPolling({
@@ -139,7 +143,8 @@ const AdicionarSaldo = () => {
   }, [showPixModal, pixResponse?.payment_id, paymentToastId]);
 
   const paymentMethods = [
-    { id: 'pix', name: 'PIX', description: 'Aprovação instantânea' }
+    { id: 'pix', name: 'PIX', description: 'Aprovação instantânea', icon: Wallet, badge: 'Instantâneo' },
+    { id: 'card', name: 'Cartão de Crédito', description: 'Confirmação imediata', icon: CreditCard, badge: 'Online' }
   ];
 
   const finalAmount = selectedAmount > 0 ? selectedAmount : parseFloat(customAmount) || 0;
@@ -197,7 +202,7 @@ const AdicionarSaldo = () => {
   };
 
   const canProceed = () => {
-    return finalAmount > 0 && paymentMethod === 'pix';
+    return finalAmount > 0 && ['pix', 'card'].includes(paymentMethod);
   };
 
   const handlePayment = async () => {
@@ -209,6 +214,11 @@ const AdicionarSaldo = () => {
     const valorFinal = Math.max(valorFinalPagamento, 0);
     if (valorFinal <= 0) {
       toast.error('Valor do pagamento deve ser maior que zero');
+      return;
+    }
+
+    if (paymentMethod === 'card') {
+      setShowCreditModal(true);
       return;
     }
 
@@ -253,6 +263,73 @@ const AdicionarSaldo = () => {
       
       // Salvar ID do toast para poder cancelá-lo depois
       setPaymentToastId(toastId);
+    }
+  };
+
+  const handleCardPayment = async (cardData?: {
+    cardNumber: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+    cardName: string;
+  }) => {
+    if (!cardData) {
+      toast.error('Dados do cartão inválidos');
+      return;
+    }
+
+    const valorFinal = Math.max(valorFinalPagamento, 0);
+    if (valorFinal <= 0) {
+      toast.error('Valor inválido para pagamento');
+      return;
+    }
+
+    if (!userData?.email || !userData?.cpf) {
+      toast.error('Complete seu cadastro (email e CPF) para pagar com cartão');
+      return;
+    }
+
+    setCardLoading(true);
+
+    try {
+      await fetchApiConfig();
+      const response = await apiRequest<any>('/mercadopago/create-card-payment.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: user?.id || null,
+          transactionAmount: valorFinal.toFixed(2),
+          email: userData.email,
+          identificationType: 'CPF',
+          identificationNumber: String(userData.cpf).replace(/\D/g, ''),
+          cardholderName: cardData.cardName,
+          cardNumber: cardData.cardNumber.replace(/\s/g, ''),
+          expirationMonth: cardData.expiryMonth,
+          expirationYear: cardData.expiryYear,
+          securityCode: cardData.cvv,
+          installments: 1,
+          description: 'Recarga de Saldo'
+        })
+      });
+
+      if (!response?.success) {
+        toast.error(response?.message || response?.error || 'Não foi possível processar o cartão');
+        return;
+      }
+
+      const status = response?.data?.status;
+      if (status === 'approved') {
+        toast.success('Pagamento aprovado! Saldo adicionado com sucesso.');
+        setShowCreditModal(false);
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1200);
+      } else {
+        toast.info(`Pagamento retornou status: ${status || 'em análise'}`);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao processar pagamento com cartão');
+    } finally {
+      setCardLoading(false);
     }
   };
 
@@ -410,37 +487,40 @@ const AdicionarSaldo = () => {
           </CardHeader>
           <CardContent className="space-y-4 sm:space-y-6">
             <div className="grid grid-cols-1 gap-2 sm:gap-3">
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.id}
-                  className={`flex items-center p-3 sm:p-4 border rounded-lg transition-all duration-200 ${
-                    paymentMethod === method.id
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border hover:border-primary/50 hover:shadow-sm cursor-pointer'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={method.id}
-                    checked={paymentMethod === method.id}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="sr-only"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                      <span className="font-medium text-sm sm:text-base">{method.name}</span>
-                      <span className="text-[10px] sm:text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-medium">
-                        Instantâneo
-                      </span>
+              {paymentMethods.map((method) => {
+                const Icon = method.icon;
+                return (
+                  <label
+                    key={method.id}
+                    className={`flex items-center p-3 sm:p-4 border rounded-lg transition-all duration-200 ${
+                      paymentMethod === method.id
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-border hover:border-primary/50 hover:shadow-sm cursor-pointer'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method.id}
+                      checked={paymentMethod === method.id}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="sr-only"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                        <span className="font-medium text-sm sm:text-base">{method.name}</span>
+                        <span className="text-[10px] sm:text-xs bg-primary/10 text-primary px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-medium">
+                          {method.badge}
+                        </span>
+                      </div>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 ml-6 sm:ml-8">
+                        {method.description}
+                      </p>
                     </div>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 ml-6 sm:ml-8">
-                      {method.description}
-                    </p>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
 
             {/* Cupom de Desconto */}
@@ -505,7 +585,7 @@ const AdicionarSaldo = () => {
           valorFinalPagamento={valorFinalPagamento}
           cupomAplicado={cupomAplicado}
           canProceed={canProceed}
-          isProcessing={loading}
+          isProcessing={loading || cardLoading}
           onPayment={handlePayment}
           hidePresets={fromModule}
         />
@@ -521,6 +601,15 @@ const AdicionarSaldo = () => {
         isProcessing={checkingPayment}
         pixData={pixResponse}
         onGenerateNew={handleGenerateNew}
+      />
+
+      {/* Modal de Cartão */}
+      <CreditCardModal
+        isOpen={showCreditModal}
+        onClose={() => setShowCreditModal(false)}
+        amount={valorFinalPagamento}
+        onPaymentConfirm={handleCardPayment}
+        isProcessing={cardLoading}
       />
     </div>
   );

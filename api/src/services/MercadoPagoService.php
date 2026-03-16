@@ -176,17 +176,17 @@ class MercadoPagoService {
     /**
      * Creditar saldo do usuário após aprovação do pagamento
      */
-    private function creditUserBalance($userId, $amount, $paymentId) {
+    private function creditUserBalance($userId, $amount, $paymentId, $paymentMethod = 'pix', $descriptionPrefix = 'RECARGA PIX') {
         try {
             // VERIFICAR SE JÁ FOI CREDITADO (evitar duplicação)
-            $checkStmt = $this->db->prepare("SELECT COUNT(*) FROM wallet_transactions WHERE description LIKE ? AND user_id = ? AND type = 'recarga'");
-            $checkStmt->execute(["%PIX%payment_id:$paymentId%", $userId]);
-            
+            $checkStmt = $this->db->prepare("SELECT COUNT(*) FROM wallet_transactions WHERE description LIKE ? AND user_id = ? AND type = 'recarga' AND payment_method = ?");
+            $checkStmt->execute(["%payment_id:$paymentId%", $userId, $paymentMethod]);
+
             if ($checkStmt->fetchColumn() > 0) {
                 error_log("⚠️ [MP-SERVICE] Pagamento $paymentId já foi creditado para usuário $userId - IGNORANDO duplicação");
                 return true; // Já foi processado
             }
-            
+
             $this->db->beginTransaction();
 
             // Saldo atual do usuário
@@ -213,44 +213,43 @@ class MercadoPagoService {
             $walletStmt->execute([$userId, $newSaldo, $newSaldo, $amount]);
 
             // Registrar transação de recarga
-            $description = "RECARGA PIX - payment_id:$paymentId";
+            $description = "$descriptionPrefix - payment_id:$paymentId";
             $txStmt = $this->db->prepare("INSERT INTO wallet_transactions
                                          (user_id, wallet_type, type, amount, balance_before, balance_after, description, payment_method, status)
-                                         VALUES (?, 'main', 'recarga', ?, ?, ?, ?, 'pix', 'completed')");
-            $txStmt->execute([$userId, $amount, $currentSaldo, $newSaldo, $description]);
+                                         VALUES (?, 'main', 'recarga', ?, ?, ?, ?, ?, 'completed')");
+            $txStmt->execute([$userId, $amount, $currentSaldo, $newSaldo, $description, $paymentMethod]);
             $transactionId = $this->db->lastInsertId();
 
-            // ✅ REGISTRAR NA CENTRAL_CASH (OBRIGATÓRIO)
-            // Buscar saldo atual do caixa central
+            // Registrar na central_cash
             $centralBalanceQuery = "SELECT COALESCE(SUM(
-                CASE 
+                CASE
                     WHEN transaction_type IN ('entrada', 'recarga', 'comissao', 'plano') THEN amount
                     WHEN transaction_type IN ('saida', 'consulta', 'saque', 'estorno') THEN -amount
                     ELSE 0
                 END
             ), 0.00) as balance FROM central_cash";
-            
+
             $centralBalanceStmt = $this->db->prepare($centralBalanceQuery);
             $centralBalanceStmt->execute();
             $centralCurrentBalance = (float)$centralBalanceStmt->fetchColumn();
             $centralNewBalance = $centralCurrentBalance + $amount;
-            
-            // Registrar entrada no caixa central
-            $centralCashQuery = "INSERT INTO central_cash 
-                               (transaction_type, amount, balance_before, balance_after, description, user_id, payment_method, reference_table, reference_id, external_id) 
-                               VALUES ('recarga', ?, ?, ?, ?, ?, 'pix', 'wallet_transactions', ?, ?)";
+
+            $centralCashQuery = "INSERT INTO central_cash
+                               (transaction_type, amount, balance_before, balance_after, description, user_id, payment_method, reference_table, reference_id, external_id)
+                               VALUES ('recarga', ?, ?, ?, ?, ?, ?, 'wallet_transactions', ?, ?)";
             $centralStmt = $this->db->prepare($centralCashQuery);
             $centralStmt->execute([
-                $amount, 
-                $centralCurrentBalance, 
-                $centralNewBalance, 
-                $description, 
-                $userId, 
+                $amount,
+                $centralCurrentBalance,
+                $centralNewBalance,
+                $description,
+                $userId,
+                $paymentMethod,
                 $transactionId,
                 $paymentId
             ]);
-            
-            error_log("✅ [MP-SERVICE] Recarga PIX creditada com sucesso:");
+
+            error_log("✅ [MP-SERVICE] Recarga {$paymentMethod} creditada com sucesso:");
             error_log("✅ [MP-SERVICE] - User ID: $userId");
             error_log("✅ [MP-SERVICE] - Valor: R$ $amount");
             error_log("✅ [MP-SERVICE] - Saldo anterior: R$ $currentSaldo");
@@ -261,10 +260,19 @@ class MercadoPagoService {
             $this->db->commit();
             return true;
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log('❌ [MP-SERVICE] Erro ao creditar saldo: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Creditar recarga por cartão já aprovada
+     */
+    public function creditApprovedCardPayment($userId, $amount, $paymentId) {
+        return $this->creditUserBalance($userId, $amount, $paymentId, 'card', 'RECARGA CARTAO');
     }
     
     /**
