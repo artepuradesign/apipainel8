@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscriptionService, UserSubscription, PlanInfo } from '@/services/subscriptionService';
+import { getDiscount } from '@/utils/planUtils';
 import { toast } from 'sonner';
 
 export interface UserPlanStatus {
