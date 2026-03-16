@@ -79,6 +79,70 @@ class SistemasDominioCom extends BaseModel {
         return (int)($row['count'] ?? 0);
     }
 
+    public function listForAdmin(?string $status, ?string $search, int $limit = 50, int $offset = 0): array {
+        $where = [];
+        $params = [];
+
+        if ($status && in_array($status, ['registrado', 'cancelado'], true)) {
+            $where[] = 'status = ?';
+            $params[] = $status;
+        }
+
+        if ($search) {
+            $where[] = '(nome_solicitante LIKE ? OR dominio_nome LIKE ? OR dominio_completo LIKE ?)';
+            $like = '%' . trim($search) . '%';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $stmt = $this->db->prepare(
+            "SELECT id, module_id, user_id, nome_solicitante, dominio_nome, dominio_completo, status, valor_cobrado, desconto_aplicado, saldo_usado, created_at, updated_at
+             FROM {$this->table}
+             {$whereSql}
+             ORDER BY id DESC
+             LIMIT ? OFFSET ?"
+        );
+
+        $params[] = $limit;
+        $params[] = $offset;
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function countForAdmin(?string $status, ?string $search): int {
+        $where = [];
+        $params = [];
+
+        if ($status && in_array($status, ['registrado', 'cancelado'], true)) {
+            $where[] = 'status = ?';
+            $params[] = $status;
+        }
+
+        if ($search) {
+            $where[] = '(nome_solicitante LIKE ? OR dominio_nome LIKE ? OR dominio_completo LIKE ?)';
+            $like = '%' . trim($search) . '%';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM {$this->table} {$whereSql}");
+        $stmt->execute($params);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return (int)($row['count'] ?? 0);
+    }
+
+    public function cancelById(int $id): bool {
+        $stmt = $this->db->prepare("UPDATE {$this->table} SET status = 'cancelado', updated_at = NOW() WHERE id = ? AND status <> 'cancelado'");
+        return $stmt->execute([$id]);
+    }
+
     public function registerDomain(array $data, int $userId): array {
         $nomeSolicitante = trim((string)($data['nome_solicitante'] ?? ''));
         if ($nomeSolicitante === '' || strlen($nomeSolicitante) > 150) {
