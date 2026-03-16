@@ -800,6 +800,36 @@ const AdminPedidos = () => {
       );
     }
 
+    if (selectedPedido.type === 'dominio-com-br' && selectedPedido.raw_dominio_br) {
+      const p = selectedPedido.raw_dominio_br;
+      return (
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div><span className="text-muted-foreground">Domínio:</span> {p.dominio_completo}</div>
+          <div><span className="text-muted-foreground">Solicitante:</span> {p.nome_solicitante}</div>
+          <div><span className="text-muted-foreground">Valor:</span> R$ {Number(p.valor_cobrado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Desconto:</span> R$ {Number(p.desconto_aplicado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Saldo usado:</span> {p.saldo_usado}</div>
+          <div><span className="text-muted-foreground">Status:</span> {p.status}</div>
+        </div>
+      );
+    }
+
+    if (selectedPedido.type === 'vps-6' && selectedPedido.raw_vps) {
+      const p = selectedPedido.raw_vps;
+      return (
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div><span className="text-muted-foreground">Instância:</span> {p.nome_instancia}</div>
+          <div><span className="text-muted-foreground">Solicitante:</span> {p.nome_solicitante}</div>
+          <div><span className="text-muted-foreground">IP:</span> {p.ip_vps}</div>
+          <div><span className="text-muted-foreground">Linux:</span> {p.configuracao_linux}</div>
+          <div><span className="text-muted-foreground">Duração:</span> {p.duracao_meses} meses</div>
+          <div><span className="text-muted-foreground">Valor:</span> R$ {Number(p.valor_cobrado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Desconto:</span> R$ {Number(p.desconto_aplicado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Status:</span> {p.status}</div>
+        </div>
+      );
+    }
+
     return null;
   };
 
