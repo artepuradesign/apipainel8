@@ -602,6 +602,15 @@ const AdicionarSaldo = () => {
         pixData={pixResponse}
         onGenerateNew={handleGenerateNew}
       />
+
+      {/* Modal de Cartão */}
+      <CreditCardModal
+        isOpen={showCreditModal}
+        onClose={() => setShowCreditModal(false)}
+        amount={valorFinalPagamento}
+        onPaymentConfirm={handleCardPayment}
+        isProcessing={cardLoading}
+      />
     </div>
   );
 };
