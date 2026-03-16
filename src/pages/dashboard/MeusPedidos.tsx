@@ -576,11 +576,17 @@ const MeusPedidos = () => {
                         <p>{t.value}: <span className="text-foreground font-medium">R$ {Number(p.preco_pago || 0).toFixed(2)}</span></p>
                         {p.dt_nascimento && <p className="hidden md:block">{t.birth}: <span className="text-foreground">{formatDateBR(p.dt_nascimento)}</span></p>}
                       </>
-                    ) : (
+                    ) : p.type === 'pdf-personalizado' ? (
                       <>
                         {p.nome_solicitante && <p>{t.requester}: <span className="text-foreground">{p.nome_solicitante}</span></p>}
                         <p>{t.value}: <span className="text-foreground font-medium">R$ {Number(p.preco_pago || 0).toFixed(2)}</span></p>
                         {p.descricao_alteracoes && <p className="md:col-span-2 truncate max-w-md">{t.changes}: <span className="text-foreground">{p.descricao_alteracoes}</span></p>}
+                      </>
+                    ) : (
+                      <>
+                        {p.nome_solicitante && <p>{t.requester}: <span className="text-foreground">{p.nome_solicitante}</span></p>}
+                        {p.dominio_completo && <p>{t.domain}: <span className="text-foreground font-mono">{p.dominio_completo}</span></p>}
+                        <p>{t.value}: <span className="text-foreground font-medium">R$ {Number(p.preco_pago || 0).toFixed(2)}</span></p>
                       </>
                     )}
                   </div>
