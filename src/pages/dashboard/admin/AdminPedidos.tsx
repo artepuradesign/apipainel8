@@ -60,7 +60,7 @@ const formatTime = (dateString: string | null) => {
 const getStatusIndex = (status: PdfRgStatus) => status === 'cancelado' ? -1 : STATUS_ORDER.indexOf(status);
 
 type UnifiedPedido = {
-  type: 'pdf-rg' | 'pdf-personalizado';
+  type: 'pdf-rg' | 'pdf-personalizado' | 'dominio-com';
   id: number;
   status: PdfRgStatus;
   label: string;
@@ -74,6 +74,7 @@ type UnifiedPedido = {
   pdf_entrega_nome?: string | null;
   raw_rg?: PdfRgPedido;
   raw_personalizado?: EditarPdfPedido;
+  raw_dominio?: SistemaDominioComRegistro;
 };
 
 const getStepTimestamp = (pedido: UnifiedPedido, step: ActivePedidoStatus): string | null => {
