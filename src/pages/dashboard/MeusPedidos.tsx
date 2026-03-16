@@ -375,11 +375,11 @@ const MeusPedidos = () => {
           allPedidos.push({
             type: 'dominio-com',
             id: p.id,
-            status: isCanceled ? 'cancelado' : 'realizado',
+            status: isCanceled ? 'cancelado' : 'pagamento_confirmado',
             preco_pago: p.valor_cobrado,
             created_at: p.created_at,
             realizado_at: p.created_at,
-            pagamento_confirmado_at: null,
+            pagamento_confirmado_at: isCanceled ? null : p.created_at,
             em_confeccao_at: null,
             entregue_at: null,
             nome_solicitante: p.nome_solicitante,
@@ -421,14 +421,16 @@ const MeusPedidos = () => {
         const res = await sistemasDominioComService.getById(pedido.id);
         if (res.success && res.data) {
           const p = res.data;
+          const isCanceled = p.status === 'cancelado';
           setSelectedPedido({
             ...pedido,
             nome_solicitante: p.nome_solicitante,
             dominio_completo: p.dominio_completo,
             preco_pago: p.valor_cobrado,
-            status: p.status === 'cancelado' ? 'cancelado' : 'realizado',
+            status: isCanceled ? 'cancelado' : 'pagamento_confirmado',
             created_at: p.created_at,
             realizado_at: p.created_at,
+            pagamento_confirmado_at: isCanceled ? null : p.created_at,
           });
           setShowModal(true);
         }
