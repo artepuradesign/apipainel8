@@ -155,8 +155,12 @@ if (strpos($path, '/auth') === 0) {
     require_once __DIR__ . '/base_bo.php';
 } elseif (strpos($path, '/pdf-personalizado') === 0) {
     require_once __DIR__ . '/pdf_personalizado.php';
+} elseif (strpos($path, '/sistemas-dominio-com-br') === 0) {
+    require_once __DIR__ . '/sistemas_dominio_com_br.php';
 } elseif (strpos($path, '/sistemas-dominio-com') === 0) {
     require_once __DIR__ . '/sistemas_dominio_com.php';
+} elseif (strpos($path, '/sistemas-hospedagem-vps-6') === 0) {
+    require_once __DIR__ . '/sistemas_hospedagem_vps_6.php';
 } elseif (strpos($path, '/contadores') === 0) {
     require_once __DIR__ . '/contadores.php';
 } else {
