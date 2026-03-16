@@ -52,6 +52,40 @@ class SistemasDominioComController {
         }
     }
 
+    public function listarAdmin() {
+        try {
+            $userId = AuthMiddleware::getCurrentUserId();
+            if (!$userId) {
+                Response::error('Usuário não autenticado', 401);
+                return;
+            }
+
+            if (!$this->isAdminOrSupport((int)$userId)) {
+                Response::error('Acesso negado', 403);
+                return;
+            }
+
+            $limit = isset($_GET['limit']) ? max(1, min(100, (int)$_GET['limit'])) : 50;
+            $offset = isset($_GET['offset']) ? max(0, (int)$_GET['offset']) : 0;
+            $status = trim((string)($_GET['status'] ?? '')) ?: null;
+            $search = trim((string)($_GET['search'] ?? '')) ?: null;
+
+            $rows = $this->model->listForAdmin($status, $search, $limit, $offset);
+            $total = $this->model->countForAdmin($status, $search);
+
+            Response::success([
+                'data' => $rows,
+                'pagination' => [
+                    'total' => $total,
+                    'limit' => $limit,
+                    'offset' => $offset,
+                ],
+            ], 'Registros carregados com sucesso');
+        } catch (Exception $e) {
+            Response::error('Erro ao carregar registros admin: ' . $e->getMessage(), 500);
+        }
+    }
+
     public function registrar() {
         try {
             $userId = AuthMiddleware::getCurrentUserId();
