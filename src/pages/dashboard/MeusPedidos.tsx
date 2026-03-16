@@ -693,7 +693,7 @@ const MeusPedidos = () => {
                 </div>
               )}
 
-              {canCancelPedido(selectedPedido.status) && (
+              {selectedPedido.type !== 'dominio-com' && canCancelPedido(selectedPedido.status) && (
                 <div className="border-t pt-3">
                   <Button
                     size="sm"
