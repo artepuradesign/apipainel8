@@ -7,7 +7,8 @@ import { toast } from 'sonner';
 import { getFullApiUrl } from '@/utils/apiHelper';
 import { pdfRgService, PdfRgPedido, PdfRgStatus } from '@/services/pdfRgService';
 import { editarPdfService, EditarPdfPedido } from '@/services/pdfPersonalizadoService';
-import { Eye, Download, Loader2, Package, DollarSign, Hammer, CheckCircle, ClipboardList, FileDown, FileText, Ban } from 'lucide-react';
+import { sistemasDominioComService } from '@/services/sistemasDominioComService';
+import { Eye, Download, Loader2, Package, DollarSign, Hammer, CheckCircle, ClipboardList, FileDown, FileText, Ban, Globe } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardTitleCard from '@/components/dashboard/DashboardTitleCard';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +39,8 @@ const textByLocale: Record<Locale, any> = {
     pdfUnavailable: 'PDF ainda não disponível',
     typeRg: 'PDF de RG',
     typeCustom: 'PDF Personalizado',
+    typeDomain: 'Domínio .COM',
+    domain: 'Domínio',
     confirmCancel: 'Tem certeza que deseja cancelar este pedido?',
     canceledSuccess: 'Pedido cancelado com sucesso',
     cancelError: 'Erro ao cancelar pedido',
@@ -78,6 +81,8 @@ const textByLocale: Record<Locale, any> = {
     pdfUnavailable: 'PDF not available yet',
     typeRg: 'ID PDF',
     typeCustom: 'Custom PDF',
+    typeDomain: 'Domain .COM',
+    domain: 'Domain',
     confirmCancel: 'Are you sure you want to cancel this order?',
     canceledSuccess: 'Order canceled successfully',
     cancelError: 'Error canceling order',
@@ -118,6 +123,8 @@ const textByLocale: Record<Locale, any> = {
     pdfUnavailable: 'PDF aún no disponible',
     typeRg: 'PDF RG',
     typeCustom: 'PDF Personalizado',
+    typeDomain: 'Dominio .COM',
+    domain: 'Dominio',
     confirmCancel: '¿Seguro que deseas cancelar este pedido?',
     canceledSuccess: 'Pedido cancelado con éxito',
     cancelError: 'Error al cancelar pedido',
@@ -164,7 +171,7 @@ const statusBadgeColors: Record<PdfRgStatus, string> = {
 const getStatusIndex = (status: PdfRgStatus) => status === 'cancelado' ? -1 : STATUS_ORDER.indexOf(status);
 
 type UnifiedPedido = {
-  type: 'pdf-rg' | 'pdf-personalizado';
+  type: 'pdf-rg' | 'pdf-personalizado' | 'dominio-com';
   id: number;
   status: PdfRgStatus;
   preco_pago: number | string;
@@ -188,6 +195,7 @@ type UnifiedPedido = {
   qr_plan?: string;
   nome_solicitante?: string;
   descricao_alteracoes?: string;
+  dominio_completo?: string;
 };
 
 const MeusPedidos = () => {
@@ -301,9 +309,10 @@ const MeusPedidos = () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const [resRg, resPersonalizado] = await Promise.all([
+      const [resRg, resPersonalizado, resDominio] = await Promise.all([
         pdfRgService.listar({ limit: 50, user_id: Number(user.id) }),
         editarPdfService.listar({ limit: 50, user_id: Number(user.id) }),
+        sistemasDominioComService.listMine({ limit: 50, offset: 0 }),
       ]);
 
       const allPedidos: UnifiedPedido[] = [];
@@ -360,6 +369,25 @@ const MeusPedidos = () => {
         });
       }
 
+      if (resDominio.success && resDominio.data?.data) {
+        resDominio.data.data.forEach((p) => {
+          const isCanceled = p.status === 'cancelado';
+          allPedidos.push({
+            type: 'dominio-com',
+            id: p.id,
+            status: isCanceled ? 'cancelado' : 'realizado',
+            preco_pago: p.valor_cobrado,
+            created_at: p.created_at,
+            realizado_at: p.created_at,
+            pagamento_confirmado_at: null,
+            em_confeccao_at: null,
+            entregue_at: null,
+            nome_solicitante: p.nome_solicitante,
+            dominio_completo: p.dominio_completo,
+          });
+        });
+      }
+
       allPedidos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setPedidos(allPedidos);
     } catch {
@@ -382,11 +410,26 @@ const MeusPedidos = () => {
           setSelectedPedido({ ...pedido, ...p });
           setShowModal(true);
         }
-      } else {
+      } else if (pedido.type === 'pdf-personalizado') {
         const res = await editarPdfService.obter(pedido.id);
         if (res.success && res.data) {
           const p = res.data;
           setSelectedPedido({ ...pedido, ...p });
+          setShowModal(true);
+        }
+      } else {
+        const res = await sistemasDominioComService.getById(pedido.id);
+        if (res.success && res.data) {
+          const p = res.data;
+          setSelectedPedido({
+            ...pedido,
+            nome_solicitante: p.nome_solicitante,
+            dominio_completo: p.dominio_completo,
+            preco_pago: p.valor_cobrado,
+            status: p.status === 'cancelado' ? 'cancelado' : 'realizado',
+            created_at: p.created_at,
+            realizado_at: p.created_at,
+          });
           setShowModal(true);
         }
       }
@@ -441,11 +484,17 @@ const MeusPedidos = () => {
     }
   };
 
-  const getTypeLabel = (type: string) => type === 'pdf-rg' ? t.typeRg : t.typeCustom;
+  const getTypeLabel = (type: string) => (
+    type === 'pdf-rg'
+      ? t.typeRg
+      : type === 'pdf-personalizado'
+      ? t.typeCustom
+      : t.typeDomain
+  );
   const canCancelPedido = (status: PdfRgStatus) => ['realizado', 'pagamento_confirmado'].includes(status);
 
   const handleCancelPedido = async (pedido: UnifiedPedido) => {
-    if (!canCancelPedido(pedido.status)) return;
+    if (!canCancelPedido(pedido.status) || pedido.type === 'dominio-com') return;
     const pedidoKey = `${pedido.type}-${pedido.id}`;
     if (!confirm(t.confirmCancel)) return;
 
@@ -477,7 +526,9 @@ const MeusPedidos = () => {
 
   const getTypeBadgeClass = (type: string) => type === 'pdf-rg'
     ? 'bg-violet-500/10 text-violet-600 border-violet-500/20'
-    : 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+    : type === 'pdf-personalizado'
+    ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+    : 'bg-sky-500/10 text-sky-600 border-sky-500/20';
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto">
@@ -504,7 +555,7 @@ const MeusPedidos = () => {
                   <div className="flex items-center gap-3">
                     <span className="font-mono font-bold text-sm">{t.order} #{p.id}</span>
                     <Badge variant="outline" className={getTypeBadgeClass(p.type)}>
-                      <FileText className="h-3 w-3 mr-1" />
+                      {p.type === 'dominio-com' ? <Globe className="h-3 w-3 mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
                       {getTypeLabel(p.type)}
                     </Badge>
                     <Badge className={statusBadgeColors[p.status] || 'bg-muted'}>
@@ -525,11 +576,17 @@ const MeusPedidos = () => {
                         <p>{t.value}: <span className="text-foreground font-medium">R$ {Number(p.preco_pago || 0).toFixed(2)}</span></p>
                         {p.dt_nascimento && <p className="hidden md:block">{t.birth}: <span className="text-foreground">{formatDateBR(p.dt_nascimento)}</span></p>}
                       </>
-                    ) : (
+                    ) : p.type === 'pdf-personalizado' ? (
                       <>
                         {p.nome_solicitante && <p>{t.requester}: <span className="text-foreground">{p.nome_solicitante}</span></p>}
                         <p>{t.value}: <span className="text-foreground font-medium">R$ {Number(p.preco_pago || 0).toFixed(2)}</span></p>
                         {p.descricao_alteracoes && <p className="md:col-span-2 truncate max-w-md">{t.changes}: <span className="text-foreground">{p.descricao_alteracoes}</span></p>}
+                      </>
+                    ) : (
+                      <>
+                        {p.nome_solicitante && <p>{t.requester}: <span className="text-foreground">{p.nome_solicitante}</span></p>}
+                        {p.dominio_completo && <p>{t.domain}: <span className="text-foreground font-mono">{p.dominio_completo}</span></p>}
+                        <p>{t.value}: <span className="text-foreground font-medium">R$ {Number(p.preco_pago || 0).toFixed(2)}</span></p>
                       </>
                     )}
                   </div>
@@ -538,7 +595,7 @@ const MeusPedidos = () => {
                     <Button size="sm" variant="outline" onClick={() => handleView(p)}>
                       <Eye className="h-4 w-4 mr-1" /> {t.details}
                     </Button>
-                    {canCancelPedido(p.status) && (
+                    {p.type !== 'dominio-com' && canCancelPedido(p.status) && (
                       <Button
                         size="sm"
                         variant="destructive"
@@ -585,7 +642,7 @@ const MeusPedidos = () => {
                     {selectedPedido.diretor && <><span className="text-muted-foreground">{t.director}:</span><span>{selectedPedido.diretor}</span></>}
                     {selectedPedido.qr_plan && <><span className="text-muted-foreground">QR Code:</span><span>{selectedPedido.qr_plan.toUpperCase()}</span></>}
                   </>
-                ) : (
+                ) : selectedPedido.type === 'pdf-personalizado' ? (
                   <>
                     {selectedPedido.nome_solicitante && <><span className="text-muted-foreground">{t.requester}:</span><span>{selectedPedido.nome_solicitante}</span></>}
                     {selectedPedido.descricao_alteracoes && (
@@ -594,6 +651,11 @@ const MeusPedidos = () => {
                         <span className="col-span-2 whitespace-pre-wrap text-foreground bg-muted/50 rounded p-2">{selectedPedido.descricao_alteracoes}</span>
                       </>
                     )}
+                  </>
+                ) : (
+                  <>
+                    {selectedPedido.nome_solicitante && <><span className="text-muted-foreground">{t.requester}:</span><span>{selectedPedido.nome_solicitante}</span></>}
+                    {selectedPedido.dominio_completo && <><span className="text-muted-foreground">{t.domain}:</span><span className="font-mono">{selectedPedido.dominio_completo}</span></>}
                   </>
                 )}
                 <span className="text-muted-foreground">{t.value}:</span><span>R$ {Number(selectedPedido.preco_pago || 0).toFixed(2)}</span>
@@ -631,7 +693,7 @@ const MeusPedidos = () => {
                 </div>
               )}
 
-              {canCancelPedido(selectedPedido.status) && (
+              {selectedPedido.type !== 'dominio-com' && canCancelPedido(selectedPedido.status) && (
                 <div className="border-t pt-3">
                   <Button
                     size="sm"

@@ -31,6 +31,8 @@ switch ($method) {
     case 'GET':
         if (preg_match('#/sistemas-dominio-com/check/?$#', $path)) {
             $controller->verificarDisponibilidade();
+        } elseif (preg_match('#/sistemas-dominio-com/(\d+)/?$#', $path, $matches)) {
+            $controller->obter((int)$matches[1]);
         } elseif (preg_match('#/sistemas-dominio-com/minhas/?$#', $path) || preg_match('#/sistemas-dominio-com/?$#', $path)) {
             $controller->listarMeus();
         } else {

@@ -11,7 +11,7 @@ import { AlertCircle, CheckCircle2, Globe, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiModules } from '@/hooks/useApiModules';
-
+import { useUserSubscription } from '@/hooks/useUserSubscription';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { getModulePrice } from '@/utils/modulePrice';
 import { sistemasDominioComService, type SistemaDominioComRegistro } from '@/services/sistemasDominioComService';
@@ -26,6 +26,12 @@ const SistemasDominioCom = () => {
   const { user } = useAuth();
   const { modules } = useApiModules();
   const { balance, loadBalance: reloadBalance } = useWalletBalance();
+  const {
+    hasActiveSubscription,
+    subscription,
+    discountPercentage,
+    calculateDiscountedPrice: calculateSubscriptionDiscount,
+  } = useUserSubscription();
 
   const [nomeSolicitante, setNomeSolicitante] = useState('');
   const [dominioNome, setDominioNome] = useState('');
@@ -57,7 +63,13 @@ const SistemasDominioCom = () => {
     return getModulePrice(MODULE_ROUTE);
   }, [currentModule?.price]);
 
-  const finalPrice = modulePrice;
+  const userPlan = hasActiveSubscription && subscription
+    ? subscription.plan_name
+    : (user ? localStorage.getItem(`user_plan_${user.id}`) || 'Pré-Pago' : 'Pré-Pago');
+
+  const { discountedPrice: finalPrice, hasDiscount } = hasActiveSubscription && modulePrice > 0
+    ? calculateSubscriptionDiscount(modulePrice)
+    : { discountedPrice: modulePrice, hasDiscount: false };
 
   const totalBalance = (balance.saldo || 0) + (balance.saldo_plano || 0);
   const canRegister = Boolean(
@@ -162,7 +174,8 @@ const SistemasDominioCom = () => {
       setShowConfirmModal(false);
       setDominioNome('');
       setAvailability(null);
-      await Promise.all([reloadBalance(), loadRegistros()]);
+      await reloadBalance();
+      navigate('/dashboard/meus-pedidos');
     } catch {
       toast.error('Erro ao registrar domínio');
     } finally {
@@ -184,16 +197,26 @@ const SistemasDominioCom = () => {
           <Card className="w-full">
             <CardHeader className="pb-4">
               <div className="relative bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30 dark:from-gray-800/50 dark:via-gray-800 dark:to-blue-900/20 rounded-lg border border-blue-100/50 dark:border-blue-800/30 shadow-sm transition-all duration-300">
+                {hasDiscount && (
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-2.5 py-1 text-xs font-bold shadow-lg">
+                      {discountPercentage}% OFF
+                    </Badge>
+                  </div>
+                )}
                 <div className="relative p-3.5 md:p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Valor do Registro</p>
-                        <h3 className="text-sm md:text-base font-bold text-foreground truncate">DOMÍNIO .COM</h3>
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Plano Ativo</p>
+                        <h3 className="text-sm md:text-base font-bold text-foreground truncate">{userPlan}</h3>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                      {hasDiscount && (
+                        <span className="text-[10px] md:text-xs text-muted-foreground line-through">R$ {modulePrice.toFixed(2)}</span>
+                      )}
                       <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent whitespace-nowrap">
                         R$ {finalPrice.toFixed(2)}
                       </span>

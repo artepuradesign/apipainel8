@@ -85,4 +85,8 @@ export const sistemasDominioComService = {
     const endpoint = `/sistemas-dominio-com/minhas${qs.toString() ? `?${qs.toString()}` : ''}`;
     return apiRequest<{ data: SistemaDominioComRegistro[]; pagination: { total: number; limit: number; offset: number } }>(endpoint);
   },
+
+  async getById(id: number) {
+    return apiRequest<SistemaDominioComRegistro>(`/sistemas-dominio-com/${id}`);
+  },
 };
