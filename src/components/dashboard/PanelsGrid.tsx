@@ -171,10 +171,21 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
     return `/module/${module.slug}`;
   };
 
+  // Comparação financeira em centavos para evitar erro de ponto flutuante
+  const toCents = (value: number) => Math.round((Number(value) || 0) * 100);
+  const hasEnoughBalance = (balance: number, price: number) => toCents(balance) >= toCents(price);
+  const getMissingAmount = (price: number, balance: number) => Math.max((toCents(price) - toCents(balance)) / 100, 0);
+
   // Handler para compra direta via PIX no overlay do módulo
   const handleDirectPurchase = async (e: React.MouseEvent, amount: number, module: any) => {
     e.stopPropagation();
-    const remaining = Math.max(amount - totalAvailableBalance, 0.01);
+    const remaining = getMissingAmount(amount, totalAvailableBalance);
+
+    if (remaining <= 0) {
+      navigate(getModulePageRoute(module));
+      return;
+    }
+
     setPixModuleAmount(remaining);
     
     const moduleRoute = getModulePageRoute(module);
