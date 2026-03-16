@@ -184,13 +184,6 @@ const SistemasDominioCom = () => {
           <Card className="w-full">
             <CardHeader className="pb-4">
               <div className="relative bg-gradient-to-br from-primary/10 via-background to-accent/10 rounded-lg border border-border shadow-sm transition-all duration-300">
-                {hasActiveSubscription && discountPercentage > 0 && (
-                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
-                    <Badge className="bg-primary text-primary-foreground border-0 px-2.5 py-1 text-xs font-bold shadow-lg">
-                      {discountPercentage}% OFF
-                    </Badge>
-                  </div>
-                )}
                 <div className="relative p-3.5 md:p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
