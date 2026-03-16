@@ -395,6 +395,8 @@ function App() {
 <Route path="/dashboard/pdf-rg" element={<DashboardLayout><PdfRg /></DashboardLayout>} />
                     <Route path="/dashboard/pdf-personalizado" element={<DashboardLayout><PdfPersonalizado /></DashboardLayout>} />
                     <Route path="/dashboard/sistemas-dominio-com" element={<DashboardLayout><SistemasDominioCom /></DashboardLayout>} />
+                    <Route path="/dashboard/sistemas-dominio-com-br" element={<DashboardLayout><SistemasDominioComBr /></DashboardLayout>} />
+                    <Route path="/dashboard/sistemas-hospedagem-vps-6" element={<DashboardLayout><SistemasHospedagemVps6 /></DashboardLayout>} />
                     <Route path="/dashboard/meus-pedidos" element={<DashboardLayout><MeusPedidos /></DashboardLayout>} />
                     <Route path="/dashboard/qrcode" element={<DashboardLayout><QRCodePage /></DashboardLayout>} />
                     <Route path="/dashboard/qrcode-rg-6m" element={<DashboardLayout><QRCodeRg6m /></DashboardLayout>} />
