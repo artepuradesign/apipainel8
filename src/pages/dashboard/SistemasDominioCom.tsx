@@ -190,10 +190,10 @@ const SistemasDominioCom = () => {
         <div className="mt-4 md:mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-4 md:gap-6 lg:gap-8">
           <Card className="w-full">
             <CardHeader className="pb-4">
-              <div className="relative bg-gradient-to-br from-blue-50/50 via-background to-indigo-50/30 rounded-lg border border-border shadow-sm transition-all duration-300">
+              <div className="relative bg-gradient-to-br from-primary/10 via-background to-accent/10 rounded-lg border border-border shadow-sm transition-all duration-300">
                 {hasActiveSubscription && discountPercentage > 0 && (
                   <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-2.5 py-1 text-xs font-bold shadow-lg">
+                    <Badge className="bg-primary text-primary-foreground border-0 px-2.5 py-1 text-xs font-bold shadow-lg">
                       {discountPercentage}% OFF
                     </Badge>
                   </div>
@@ -201,7 +201,7 @@ const SistemasDominioCom = () => {
                 <div className="relative p-3.5 md:p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full flex-shrink-0" />
+                      <div className="w-1 h-10 bg-gradient-to-b from-primary to-accent rounded-full flex-shrink-0" />
                       <div className="min-w-0">
                         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Plano Ativo</p>
                         <h3 className="text-sm md:text-base font-bold text-foreground truncate">CONSULTAS</h3>
@@ -211,7 +211,7 @@ const SistemasDominioCom = () => {
                       {hasActiveSubscription && discountPercentage > 0 && (
                         <span className="text-[10px] md:text-xs text-muted-foreground line-through">R$ {modulePrice.toFixed(2)}</span>
                       )}
-                      <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent whitespace-nowrap">
+                      <span className="text-xl md:text-2xl font-bold text-primary whitespace-nowrap">
                         R$ {finalPrice.toFixed(2)}
                       </span>
                     </div>
