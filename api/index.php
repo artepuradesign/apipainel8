@@ -607,6 +607,12 @@ try {
         exit();
     }
 
+    // Sistemas Domínio .COM - Módulo 176
+    if (strpos($endpoint, '/sistemas-dominio-com') === 0) {
+        include __DIR__ . '/src/routes/sistemas_dominio_com.php';
+        exit();
+    }
+
     // Editáveis RG - Módulo 85
     if (strpos($endpoint, '/editaveis-rg') === 0) {
         include __DIR__ . '/src/routes/editaveis_rg.php';

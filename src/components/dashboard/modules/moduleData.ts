@@ -14,7 +14,8 @@ import {
   Shield,
   Camera,
   FileText,
-  Calendar
+  Calendar,
+  Globe
 } from 'lucide-react';
 
 export const serviceModules = [
