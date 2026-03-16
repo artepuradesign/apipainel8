@@ -785,6 +785,7 @@ const AdminPedidos = () => {
             <SelectItem value="all">Todos os tipos</SelectItem>
             <SelectItem value="pdf-rg">PDF RG</SelectItem>
             <SelectItem value="pdf-personalizado">PDF Personalizado</SelectItem>
+            <SelectItem value="dominio-com">DOMÍNIO .COM</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
