@@ -280,6 +280,41 @@ const AdminPedidos = () => {
         }
       }
 
+      // Fetch domínio .com orders
+      if (typeFilter === 'all' || typeFilter === 'dominio-com') {
+        const domainStatus = statusFilter === 'all'
+          ? undefined
+          : (statusFilter === 'cancelado' ? 'cancelado' : 'registrado');
+
+        const res3 = await sistemasDominioComService.listAdmin({
+          limit: 50,
+          offset: 0,
+          ...(search ? { search } : {}),
+          ...(domainStatus ? { status: domainStatus } : {}),
+        });
+
+        if (res3.success && res3.data) {
+          res3.data.data.forEach((d: SistemaDominioComRegistro) => {
+            const mappedStatus: PdfRgStatus = d.status === 'cancelado' ? 'cancelado' : 'pagamento_confirmado';
+            results.push({
+              type: 'dominio-com',
+              id: d.id,
+              status: mappedStatus,
+              label: d.dominio_completo,
+              sublabel: `Solicitante: ${d.nome_solicitante}`,
+              created_at: d.created_at,
+              preco_pago: Number(d.valor_cobrado || 0),
+              realizado_at: d.created_at,
+              pagamento_confirmado_at: d.created_at,
+              em_confeccao_at: null,
+              entregue_at: null,
+              raw_dominio: d,
+            });
+          });
+          totalCount += res3.data.pagination.total;
+        }
+      }
+
       // Sort by created_at desc
       results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
