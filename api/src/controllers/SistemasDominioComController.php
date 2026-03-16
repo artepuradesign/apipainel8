@@ -4,9 +4,11 @@ require_once __DIR__ . '/../models/SistemasDominioCom.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 
 class SistemasDominioComController {
+    private $db;
     private $model;
 
     public function __construct($db) {
+        $this->db = $db;
         $this->model = new SistemasDominioCom($db);
     }
 
@@ -99,6 +101,15 @@ class SistemasDominioComController {
             if (!$input) {
                 Response::error('Dados inválidos', 400);
                 return;
+            }
+
+            $result = $this->model->registerDomain($input, (int)$userId);
+            Response::success($result, 'Domínio registrado com sucesso');
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+
     public function cancelarAdmin(int $id) {
         try {
             $userId = AuthMiddleware::getCurrentUserId();
@@ -121,22 +132,6 @@ class SistemasDominioComController {
             Response::success(['id' => $id, 'status' => 'cancelado'], 'Pedido cancelado com sucesso');
         } catch (Exception $e) {
             Response::error('Erro ao cancelar pedido: ' . $e->getMessage(), 500);
-        }
-    }
-
-    private function isAdminOrSupport(int $userId): bool {
-        $stmt = $this->model->db->prepare("SELECT user_role FROM users WHERE id = ? LIMIT 1");
-        $stmt->execute([$userId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $role = $row['user_role'] ?? '';
-        return in_array($role, ['admin', 'suporte'], true);
-    }
-}
-
-            $result = $this->model->registerDomain($input, (int)$userId);
-            Response::success($result, 'Domínio registrado com sucesso');
-        } catch (Exception $e) {
-            Response::error($e->getMessage(), 400);
         }
     }
 
@@ -163,5 +158,14 @@ class SistemasDominioComController {
         } catch (Exception $e) {
             Response::error('Erro ao carregar registro: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function isAdminOrSupport(int $userId): bool {
+        $stmt = $this->db->prepare("SELECT user_role FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $role = $row['user_role'] ?? '';
+
+        return in_array($role, ['admin', 'suporte'], true);
     }
 }
