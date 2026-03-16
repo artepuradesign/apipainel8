@@ -1,0 +1,76 @@
+<?php
+require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../models/SistemasDominioCom.php';
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+
+class SistemasDominioComController {
+    private $model;
+
+    public function __construct($db) {
+        $this->model = new SistemasDominioCom($db);
+    }
+
+    public function verificarDisponibilidade() {
+        try {
+            $domain = trim((string)($_GET['domain'] ?? $_GET['dominio_nome'] ?? ''));
+            if ($domain === '') {
+                Response::error('Informe o nome do domínio para pesquisa', 400);
+                return;
+            }
+
+            $result = $this->model->checkAvailability($domain);
+            Response::success($result, $result['disponivel'] ? 'Domínio disponível para registro' : 'Domínio já registrado');
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+
+    public function listarMeus() {
+        try {
+            $userId = AuthMiddleware::getCurrentUserId();
+            if (!$userId) {
+                Response::error('Usuário não autenticado', 401);
+                return;
+            }
+
+            $limit = isset($_GET['limit']) ? max(1, min(100, (int)$_GET['limit'])) : 50;
+            $offset = isset($_GET['offset']) ? max(0, (int)$_GET['offset']) : 0;
+
+            $rows = $this->model->listByUser((int)$userId, $limit, $offset);
+            $total = $this->model->countByUser((int)$userId);
+
+            Response::success([
+                'data' => $rows,
+                'pagination' => [
+                    'total' => $total,
+                    'limit' => $limit,
+                    'offset' => $offset,
+                ],
+            ], 'Registros carregados com sucesso');
+        } catch (Exception $e) {
+            Response::error('Erro ao carregar registros: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function registrar() {
+        try {
+            $userId = AuthMiddleware::getCurrentUserId();
+            if (!$userId) {
+                Response::error('Usuário não autenticado', 401);
+                return;
+            }
+
+            $raw = file_get_contents('php://input');
+            $input = json_decode($raw, true);
+            if (!$input) {
+                Response::error('Dados inválidos', 400);
+                return;
+            }
+
+            $result = $this->model->registerDomain($input, (int)$userId);
+            Response::success($result, 'Domínio registrado com sucesso');
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+}
