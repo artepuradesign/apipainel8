@@ -348,7 +348,7 @@ const AdminPedidos = () => {
           toast.error('Erro ao carregar detalhes');
           setQrCadastroSelecionado(null);
         }
-      } else {
+      } else if (pedido.type === 'pdf-personalizado') {
         const res = await editarPdfService.obter(pedido.id);
         if (res.success && res.data) {
           setSelectedPedido({
@@ -359,6 +359,9 @@ const AdminPedidos = () => {
         } else {
           toast.error('Erro ao carregar detalhes');
         }
+        setQrCadastroSelecionado(null);
+      } else {
+        setSelectedPedido(pedido);
         setQrCadastroSelecionado(null);
       }
     } catch (e) {
