@@ -605,11 +605,13 @@ const AdminPedidos = () => {
       let res;
       if (pedido.type === 'pdf-rg') {
         res = await pdfRgService.deletar(pedido.id);
-      } else {
+      } else if (pedido.type === 'pdf-personalizado') {
         res = await editarPdfService.deletar(pedido.id);
+      } else {
+        res = await sistemasDominioComService.cancelByAdmin(pedido.id);
       }
       if (res.success) {
-        toast.success('Pedido excluído');
+        toast.success('Pedido atualizado com sucesso');
         loadPedidos();
         if (selectedPedido?.id === pedido.id && selectedPedido?.type === pedido.type) setSelectedPedido(null);
       } else {
