@@ -874,7 +874,7 @@ const AdminPedidos = () => {
           <DialogHeader>
             <div className="flex items-center justify-between gap-2 pr-8">
               <DialogTitle className="flex items-center gap-2">
-                <Badge variant="outline" className={selectedPedido?.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
+                <Badge variant="outline" className={selectedPedido?.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : selectedPedido?.type === 'dominio-com' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
                   {selectedPedido ? typeLabel(selectedPedido.type) : ''}
                 </Badge>
                 Pedido #{selectedPedido?.id}
