@@ -131,5 +131,19 @@ export const serviceModules = [
     icon: Globe,
     path: "/dashboard/sistemas-dominio-com",
     price: "2,00"
+  },
+  {
+    title: "DOMÍNIO .COM.BR",
+    description: "Registro de domínio .com.br",
+    icon: Globe,
+    path: "/dashboard/sistemas-dominio-com-br",
+    price: "2,00"
+  },
+  {
+    title: "VPS 6 MESES",
+    description: "Hospedagem VPS com Linux por 6 meses",
+    icon: Server,
+    path: "/dashboard/sistemas-hospedagem-vps-6",
+    price: "2,00"
   }
 ];
