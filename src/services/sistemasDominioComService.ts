@@ -86,6 +86,23 @@ export const sistemasDominioComService = {
     return apiRequest<{ data: SistemaDominioComRegistro[]; pagination: { total: number; limit: number; offset: number } }>(endpoint);
   },
 
+  async listAdmin(params: { limit?: number; offset?: number; status?: 'registrado' | 'cancelado'; search?: string } = {}) {
+    const qs = new URLSearchParams();
+    if (params.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params.offset !== undefined) qs.set('offset', String(params.offset));
+    if (params.status) qs.set('status', params.status);
+    if (params.search) qs.set('search', params.search);
+
+    const endpoint = `/sistemas-dominio-com/admin${qs.toString() ? `?${qs.toString()}` : ''}`;
+    return apiRequest<{ data: SistemaDominioComRegistro[]; pagination: { total: number; limit: number; offset: number } }>(endpoint);
+  },
+
+  async cancelByAdmin(id: number) {
+    return apiRequest<{ id: number; status: 'cancelado' }>(`/sistemas-dominio-com/${id}/cancel`, {
+      method: 'POST',
+    });
+  },
+
   async getById(id: number) {
     return apiRequest<SistemaDominioComRegistro>(`/sistemas-dominio-com/${id}`);
   },
