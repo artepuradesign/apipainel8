@@ -11,7 +11,7 @@ import { AlertCircle, CheckCircle2, Globe, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiModules } from '@/hooks/useApiModules';
-import { useUserSubscription } from '@/hooks/useUserSubscription';
+
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { getModulePrice } from '@/utils/modulePrice';
 import { sistemasDominioComService, type SistemaDominioComRegistro } from '@/services/sistemasDominioComService';
