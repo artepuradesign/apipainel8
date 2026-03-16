@@ -39,6 +39,8 @@ const textByLocale: Record<Locale, any> = {
     pdfUnavailable: 'PDF ainda não disponível',
     typeRg: 'PDF de RG',
     typeCustom: 'PDF Personalizado',
+    typeDomain: 'Domínio .COM',
+    domain: 'Domínio',
     confirmCancel: 'Tem certeza que deseja cancelar este pedido?',
     canceledSuccess: 'Pedido cancelado com sucesso',
     cancelError: 'Erro ao cancelar pedido',
