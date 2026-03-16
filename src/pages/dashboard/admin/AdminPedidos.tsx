@@ -976,7 +976,7 @@ const AdminPedidos = () => {
             </div>
           ) : selectedPedido && (
             <div className="space-y-5">
-              {selectedPedido.type !== 'dominio-com' && <StatusProgressCircles pedido={selectedPedido} />}
+              {(selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado') && <StatusProgressCircles pedido={selectedPedido} />}
 
               {renderDetailContent()}
               {renderAnexos()}
