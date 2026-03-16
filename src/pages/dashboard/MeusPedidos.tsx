@@ -410,11 +410,26 @@ const MeusPedidos = () => {
           setSelectedPedido({ ...pedido, ...p });
           setShowModal(true);
         }
-      } else {
+      } else if (pedido.type === 'pdf-personalizado') {
         const res = await editarPdfService.obter(pedido.id);
         if (res.success && res.data) {
           const p = res.data;
           setSelectedPedido({ ...pedido, ...p });
+          setShowModal(true);
+        }
+      } else {
+        const res = await sistemasDominioComService.getById(pedido.id);
+        if (res.success && res.data) {
+          const p = res.data;
+          setSelectedPedido({
+            ...pedido,
+            nome_solicitante: p.nome_solicitante,
+            dominio_completo: p.dominio_completo,
+            preco_pago: p.valor_cobrado,
+            status: p.status === 'cancelado' ? 'cancelado' : 'realizado',
+            created_at: p.created_at,
+            realizado_at: p.created_at,
+          });
           setShowModal(true);
         }
       }
