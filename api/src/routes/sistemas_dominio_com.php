@@ -31,6 +31,8 @@ switch ($method) {
     case 'GET':
         if (preg_match('#/sistemas-dominio-com/check/?$#', $path)) {
             $controller->verificarDisponibilidade();
+        } elseif (preg_match('#/sistemas-dominio-com/admin/?$#', $path)) {
+            $controller->listarAdmin();
         } elseif (preg_match('#/sistemas-dominio-com/(\d+)/?$#', $path, $matches)) {
             $controller->obter((int)$matches[1]);
         } elseif (preg_match('#/sistemas-dominio-com/minhas/?$#', $path) || preg_match('#/sistemas-dominio-com/?$#', $path)) {
@@ -43,6 +45,8 @@ switch ($method) {
     case 'POST':
         if (preg_match('#/sistemas-dominio-com/register/?$#', $path)) {
             $controller->registrar();
+        } elseif (preg_match('#/sistemas-dominio-com/(\d+)/cancel/?$#', $path, $matches)) {
+            $controller->cancelarAdmin((int)$matches[1]);
         } else {
             Response::notFound('Endpoint não encontrado');
         }

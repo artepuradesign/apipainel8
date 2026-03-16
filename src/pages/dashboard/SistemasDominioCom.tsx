@@ -6,13 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertCircle, CheckCircle2, Globe, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiModules } from '@/hooks/useApiModules';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
+import { usePixPaymentFlow } from '@/hooks/usePixPaymentFlow';
+import { useUserDataApi } from '@/hooks/useUserDataApi';
+import PixQRCodeModal from '@/components/payment/PixQRCodeModal';
 import { getModulePrice } from '@/utils/modulePrice';
 import { sistemasDominioComService, type SistemaDominioComRegistro } from '@/services/sistemasDominioComService';
 import SimpleTitleBar from '@/components/dashboard/SimpleTitleBar';
@@ -24,6 +26,7 @@ const SistemasDominioCom = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { userData } = useUserDataApi();
   const { modules } = useApiModules();
   const { balance, loadBalance: reloadBalance } = useWalletBalance();
   const {
@@ -32,12 +35,14 @@ const SistemasDominioCom = () => {
     discountPercentage,
     calculateDiscountedPrice: calculateSubscriptionDiscount,
   } = useUserSubscription();
+  const { createPixPayment, checkPaymentStatus, generateNewPayment, checkingPayment, pixResponse, loading: pixLoading } = usePixPaymentFlow();
 
   const [nomeSolicitante, setNomeSolicitante] = useState('');
   const [dominioNome, setDominioNome] = useState('');
   const [checkLoading, setCheckLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
   const [availability, setAvailability] = useState<{ dominioCompleto: string; disponivel: boolean; message: string } | null>(null);
   const [registros, setRegistros] = useState<SistemaDominioComRegistro[]>([]);
   const [registrosLoading, setRegistrosLoading] = useState(false);
@@ -72,12 +77,12 @@ const SistemasDominioCom = () => {
     : { discountedPrice: modulePrice, hasDiscount: false };
 
   const totalBalance = (balance.saldo || 0) + (balance.saldo_plano || 0);
+  const hasSufficientBalance = totalBalance >= finalPrice;
   const canRegister = Boolean(
     user &&
     nomeSolicitante.trim() &&
     availability?.disponivel &&
-    finalPrice > 0 &&
-    totalBalance >= finalPrice
+    finalPrice > 0
   );
 
   const loadRegistros = useCallback(async () => {
@@ -141,17 +146,41 @@ const SistemasDominioCom = () => {
     }
   };
 
-  const openConfirmModal = () => {
+  const openConfirmModal = async () => {
     if (!canRegister) {
-      if (totalBalance < finalPrice) {
-        toast.error(`Saldo insuficiente. Necessário: R$ ${finalPrice.toFixed(2).replace('.', ',')}`);
-        return;
-      }
       toast.error('Preencha os dados e pesquise um domínio disponível');
       return;
     }
 
-    setShowConfirmModal(true);
+    if (hasSufficientBalance) {
+      setShowConfirmModal(true);
+      return;
+    }
+
+    const pixAmount = Number(finalPrice.toFixed(2));
+    const pixData = await createPixPayment(pixAmount, userData || user);
+
+    if (pixData) {
+      setShowPixModal(true);
+      toast.info('Saldo insuficiente. Gere o PIX para concluir o pedido.');
+    }
+  };
+
+  const handlePixPaymentConfirm = async () => {
+    if (!pixResponse?.payment_id) return;
+
+    const status = await checkPaymentStatus(pixResponse.payment_id);
+    if (status === 'approved') {
+      await reloadBalance();
+      setShowPixModal(false);
+      setShowConfirmModal(true);
+      toast.success('Pagamento aprovado! Agora confirme o registro do domínio.');
+    }
+  };
+
+  const handleGenerateNewPix = async () => {
+    const pixAmount = Number(finalPrice.toFixed(2));
+    await generateNewPayment(pixAmount, userData || user);
   };
 
   const handleRegister = async () => {
@@ -280,10 +309,10 @@ const SistemasDominioCom = () => {
                 </Button>
               </div>
 
-              {!canRegister && totalBalance < finalPrice && (
+              {!hasSufficientBalance && (
                 <div className="flex items-center gap-2 text-destructive text-xs">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Saldo insuficiente. Necessário: R$ {finalPrice.toFixed(2)}</span>
+                  <span>Saldo insuficiente. Gere o PIX para pagar R$ {finalPrice.toFixed(2).replace('.', ',')}</span>
                 </div>
               )}
             </CardContent>
@@ -349,6 +378,16 @@ const SistemasDominioCom = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PixQRCodeModal
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        amount={Number(finalPrice.toFixed(2))}
+        onPaymentConfirm={handlePixPaymentConfirm}
+        isProcessing={checkingPayment || pixLoading}
+        pixData={pixResponse}
+        onGenerateNew={handleGenerateNewPix}
+      />
     </div>
   );
 };

@@ -4,9 +4,11 @@ require_once __DIR__ . '/../models/SistemasDominioCom.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 
 class SistemasDominioComController {
+    private $db;
     private $model;
 
     public function __construct($db) {
+        $this->db = $db;
         $this->model = new SistemasDominioCom($db);
     }
 
@@ -52,6 +54,40 @@ class SistemasDominioComController {
         }
     }
 
+    public function listarAdmin() {
+        try {
+            $userId = AuthMiddleware::getCurrentUserId();
+            if (!$userId) {
+                Response::error('Usuário não autenticado', 401);
+                return;
+            }
+
+            if (!$this->isAdminOrSupport((int)$userId)) {
+                Response::error('Acesso negado', 403);
+                return;
+            }
+
+            $limit = isset($_GET['limit']) ? max(1, min(100, (int)$_GET['limit'])) : 50;
+            $offset = isset($_GET['offset']) ? max(0, (int)$_GET['offset']) : 0;
+            $status = trim((string)($_GET['status'] ?? '')) ?: null;
+            $search = trim((string)($_GET['search'] ?? '')) ?: null;
+
+            $rows = $this->model->listForAdmin($status, $search, $limit, $offset);
+            $total = $this->model->countForAdmin($status, $search);
+
+            Response::success([
+                'data' => $rows,
+                'pagination' => [
+                    'total' => $total,
+                    'limit' => $limit,
+                    'offset' => $offset,
+                ],
+            ], 'Registros carregados com sucesso');
+        } catch (Exception $e) {
+            Response::error('Erro ao carregar registros admin: ' . $e->getMessage(), 500);
+        }
+    }
+
     public function registrar() {
         try {
             $userId = AuthMiddleware::getCurrentUserId();
@@ -71,6 +107,31 @@ class SistemasDominioComController {
             Response::success($result, 'Domínio registrado com sucesso');
         } catch (Exception $e) {
             Response::error($e->getMessage(), 400);
+        }
+    }
+
+    public function cancelarAdmin(int $id) {
+        try {
+            $userId = AuthMiddleware::getCurrentUserId();
+            if (!$userId) {
+                Response::error('Usuário não autenticado', 401);
+                return;
+            }
+
+            if (!$this->isAdminOrSupport((int)$userId)) {
+                Response::error('Acesso negado', 403);
+                return;
+            }
+
+            if ($id <= 0) {
+                Response::error('ID inválido', 400);
+                return;
+            }
+
+            $this->model->cancelById($id);
+            Response::success(['id' => $id, 'status' => 'cancelado'], 'Pedido cancelado com sucesso');
+        } catch (Exception $e) {
+            Response::error('Erro ao cancelar pedido: ' . $e->getMessage(), 500);
         }
     }
 
@@ -97,5 +158,14 @@ class SistemasDominioComController {
         } catch (Exception $e) {
             Response::error('Erro ao carregar registro: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function isAdminOrSupport(int $userId): bool {
+        $stmt = $this->db->prepare("SELECT user_role FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $role = $row['user_role'] ?? '';
+
+        return in_array($role, ['admin', 'suporte'], true);
     }
 }

@@ -10,11 +10,12 @@ import { toast } from 'sonner';
 import { pdfRgService, PdfRgPedido, PdfRgStatus } from '@/services/pdfRgService';
 import { editarPdfService, EditarPdfPedido } from '@/services/pdfPersonalizadoService';
 import { qrcodeRegistrationsService, type QrRegistration } from '@/services/qrcodeRegistrationsService';
-import { Search, Eye, Trash2, RefreshCw, Download, Loader2, Upload, Package, DollarSign, Hammer, CheckCircle, X, FileEdit, Ban } from 'lucide-react';
+import { Search, Eye, Trash2, RefreshCw, Download, Loader2, Upload, Package, DollarSign, Hammer, CheckCircle, X, FileEdit, Ban, Globe } from 'lucide-react';
 import DashboardTitleCard from '@/components/dashboard/DashboardTitleCard';
 import QrCadastroCard from '@/components/qrcode/QrCadastroCard';
 import { getFullApiUrl } from '@/utils/apiHelper';
 import { cookieUtils } from '@/utils/cookieUtils';
+import { sistemasDominioComService, type SistemaDominioComRegistro } from '@/services/sistemasDominioComService';
 
 type ActivePedidoStatus = Exclude<PdfRgStatus, 'cancelado'>;
 
@@ -59,7 +60,7 @@ const formatTime = (dateString: string | null) => {
 const getStatusIndex = (status: PdfRgStatus) => status === 'cancelado' ? -1 : STATUS_ORDER.indexOf(status);
 
 type UnifiedPedido = {
-  type: 'pdf-rg' | 'pdf-personalizado';
+  type: 'pdf-rg' | 'pdf-personalizado' | 'dominio-com';
   id: number;
   status: PdfRgStatus;
   label: string;
@@ -73,6 +74,7 @@ type UnifiedPedido = {
   pdf_entrega_nome?: string | null;
   raw_rg?: PdfRgPedido;
   raw_personalizado?: EditarPdfPedido;
+  raw_dominio?: SistemaDominioComRegistro;
 };
 
 const getStepTimestamp = (pedido: UnifiedPedido, step: ActivePedidoStatus): string | null => {
@@ -278,6 +280,41 @@ const AdminPedidos = () => {
         }
       }
 
+      // Fetch domínio .com orders
+      if (typeFilter === 'all' || typeFilter === 'dominio-com') {
+        const domainStatus = statusFilter === 'all'
+          ? undefined
+          : (statusFilter === 'cancelado' ? 'cancelado' : 'registrado');
+
+        const res3 = await sistemasDominioComService.listAdmin({
+          limit: 50,
+          offset: 0,
+          ...(search ? { search } : {}),
+          ...(domainStatus ? { status: domainStatus } : {}),
+        });
+
+        if (res3.success && res3.data) {
+          res3.data.data.forEach((d: SistemaDominioComRegistro) => {
+            const mappedStatus: PdfRgStatus = d.status === 'cancelado' ? 'cancelado' : 'pagamento_confirmado';
+            results.push({
+              type: 'dominio-com',
+              id: d.id,
+              status: mappedStatus,
+              label: d.dominio_completo,
+              sublabel: `Solicitante: ${d.nome_solicitante}`,
+              created_at: d.created_at,
+              preco_pago: Number(d.valor_cobrado || 0),
+              realizado_at: d.created_at,
+              pagamento_confirmado_at: d.created_at,
+              em_confeccao_at: null,
+              entregue_at: null,
+              raw_dominio: d,
+            });
+          });
+          totalCount += res3.data.pagination.total;
+        }
+      }
+
       // Sort by created_at desc
       results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -311,7 +348,7 @@ const AdminPedidos = () => {
           toast.error('Erro ao carregar detalhes');
           setQrCadastroSelecionado(null);
         }
-      } else {
+      } else if (pedido.type === 'pdf-personalizado') {
         const res = await editarPdfService.obter(pedido.id);
         if (res.success && res.data) {
           setSelectedPedido({
@@ -322,6 +359,9 @@ const AdminPedidos = () => {
         } else {
           toast.error('Erro ao carregar detalhes');
         }
+        setQrCadastroSelecionado(null);
+      } else {
+        setSelectedPedido(pedido);
         setQrCadastroSelecionado(null);
       }
     } catch (e) {
@@ -565,11 +605,13 @@ const AdminPedidos = () => {
       let res;
       if (pedido.type === 'pdf-rg') {
         res = await pdfRgService.deletar(pedido.id);
-      } else {
+      } else if (pedido.type === 'pdf-personalizado') {
         res = await editarPdfService.deletar(pedido.id);
+      } else {
+        res = await sistemasDominioComService.cancelByAdmin(pedido.id);
       }
       if (res.success) {
-        toast.success('Pedido excluído');
+        toast.success('Pedido atualizado com sucesso');
         loadPedidos();
         if (selectedPedido?.id === pedido.id && selectedPedido?.type === pedido.type) setSelectedPedido(null);
       } else {
@@ -594,7 +636,11 @@ const AdminPedidos = () => {
     setPdfFile(file);
   };
 
-  const typeLabel = (type: string) => type === 'pdf-rg' ? 'PDF RG' : 'PDF Personalizado';
+  const typeLabel = (type: string) => {
+    if (type === 'pdf-rg') return 'PDF RG';
+    if (type === 'pdf-personalizado') return 'PDF Personalizado';
+    return 'DOMÍNIO .COM';
+  };
   const canCancelPedido = (status: PdfRgStatus) => !['entregue', 'cancelado'].includes(status);
 
   const handleCancelPedido = async (pedido: UnifiedPedido | null) => {
@@ -605,7 +651,9 @@ const AdminPedidos = () => {
     try {
       const res = pedido.type === 'pdf-rg'
         ? await pdfRgService.deletar(pedido.id)
-        : await editarPdfService.deletar(pedido.id);
+        : pedido.type === 'pdf-personalizado'
+        ? await editarPdfService.deletar(pedido.id)
+        : await sistemasDominioComService.cancelByAdmin(pedido.id);
 
       if (res.success) {
         toast.success('Pedido cancelado com sucesso');
@@ -664,11 +712,27 @@ const AdminPedidos = () => {
       );
     }
 
+    if (selectedPedido.type === 'dominio-com' && selectedPedido.raw_dominio) {
+      const p = selectedPedido.raw_dominio;
+      return (
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div><span className="text-muted-foreground">Domínio:</span> {p.dominio_completo}</div>
+          <div><span className="text-muted-foreground">Solicitante:</span> {p.nome_solicitante}</div>
+          <div><span className="text-muted-foreground">Valor:</span> R$ {Number(p.valor_cobrado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Desconto:</span> R$ {Number(p.desconto_aplicado || 0).toFixed(2)}</div>
+          <div><span className="text-muted-foreground">Saldo usado:</span> {p.saldo_usado}</div>
+          <div><span className="text-muted-foreground">Status:</span> {p.status}</div>
+        </div>
+      );
+    }
+
     return null;
   };
 
   const renderAnexos = () => {
     if (!selectedPedido) return null;
+    if (selectedPedido.type === 'dominio-com') return null;
+
     const raw = selectedPedido.type === 'pdf-rg' ? selectedPedido.raw_rg : selectedPedido.raw_personalizado;
     if (!raw) return null;
 
@@ -723,6 +787,7 @@ const AdminPedidos = () => {
             <SelectItem value="all">Todos os tipos</SelectItem>
             <SelectItem value="pdf-rg">PDF RG</SelectItem>
             <SelectItem value="pdf-personalizado">PDF Personalizado</SelectItem>
+            <SelectItem value="dominio-com">DOMÍNIO .COM</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -764,8 +829,8 @@ const AdminPedidos = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className={p.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
-                        {p.type === 'pdf-personalizado' ? <FileEdit className="h-3 w-3 mr-1" /> : <Package className="h-3 w-3 mr-1" />}
+                      <Badge variant="outline" className={p.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : p.type === 'dominio-com' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
+                        {p.type === 'pdf-personalizado' ? <FileEdit className="h-3 w-3 mr-1" /> : p.type === 'dominio-com' ? <Globe className="h-3 w-3 mr-1" /> : <Package className="h-3 w-3 mr-1" />}
                         {typeLabel(p.type)}
                       </Badge>
                       <span className="font-medium text-sm">#{p.id}</span>
@@ -809,7 +874,7 @@ const AdminPedidos = () => {
           <DialogHeader>
             <div className="flex items-center justify-between gap-2 pr-8">
               <DialogTitle className="flex items-center gap-2">
-                <Badge variant="outline" className={selectedPedido?.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
+                <Badge variant="outline" className={selectedPedido?.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : selectedPedido?.type === 'dominio-com' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
                   {selectedPedido ? typeLabel(selectedPedido.type) : ''}
                 </Badge>
                 Pedido #{selectedPedido?.id}
@@ -837,7 +902,7 @@ const AdminPedidos = () => {
             </div>
           ) : selectedPedido && (
             <div className="space-y-5">
-              <StatusProgressCircles pedido={selectedPedido} />
+              {selectedPedido.type !== 'dominio-com' && <StatusProgressCircles pedido={selectedPedido} />}
 
               {renderDetailContent()}
               {renderAnexos()}
@@ -857,92 +922,94 @@ const AdminPedidos = () => {
                 </div>
               )}
 
-              {/* PDF Upload for delivery */}
-              <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Gerenciar PDF de Entrega
-                  {selectedPedido.status !== 'entregue' && <span className="text-xs text-destructive">(obrigatório para Entregue)</span>}
-                </Label>
+              {selectedPedido.type !== 'dominio-com' && (
+                <>
+                  <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Gerenciar PDF de Entrega
+                      {selectedPedido.status !== 'entregue' && <span className="text-xs text-destructive">(obrigatório para Entregue)</span>}
+                    </Label>
 
-                {existingPdfNome && !pdfFile && (
-                  <div className="flex items-center justify-between bg-background rounded-md p-2 border gap-2">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-emerald-500" />
-                      PDF atual: <strong>{existingPdfNome}</strong>
-                    </p>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="h-7"
-                      onClick={handleDeletePdf}
-                      disabled={deletingPdf}
-                      title="Excluir PDF e voltar para produção"
-                    >
-                      {deletingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
-                      {deletingPdf ? 'Excluindo...' : 'Excluir (voltar produção)'}
-                    </Button>
-                  </div>
-                )}
+                    {existingPdfNome && !pdfFile && (
+                      <div className="flex items-center justify-between bg-background rounded-md p-2 border gap-2">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3 text-emerald-500" />
+                          PDF atual: <strong>{existingPdfNome}</strong>
+                        </p>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-7"
+                          onClick={handleDeletePdf}
+                          disabled={deletingPdf}
+                          title="Excluir PDF e voltar para produção"
+                        >
+                          {deletingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                          {deletingPdf ? 'Excluindo...' : 'Excluir (voltar produção)'}
+                        </Button>
+                      </div>
+                    )}
 
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handlePdfChange}
-                  className="cursor-pointer"
-                />
-                {pdfFile && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-emerald-600 flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3" /> {pdfFile.name}
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={handleSavePdf}
-                      disabled={savingPdf}
-                      className="gap-1"
-                    >
-                      {savingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                      {savingPdf ? 'Atualizando...' : 'Atualizar PDF'}
-                    </Button>
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handlePdfChange}
+                      className="cursor-pointer"
+                    />
+                    {pdfFile && (
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-emerald-600 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" /> {pdfFile.name}
+                        </p>
+                        <Button
+                          size="sm"
+                          onClick={handleSavePdf}
+                          disabled={savingPdf}
+                          className="gap-1"
+                        >
+                          {savingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                          {savingPdf ? 'Atualizando...' : 'Atualizar PDF'}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Status Update */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium">Atualizar Status:</p>
-                    <p className="text-xs text-muted-foreground">Clique em uma etapa para atualizar o status do pedido.</p>
-                  </div>
-                  {canCancelPedido(selectedPedido.status) && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleCancelPedido(selectedPedido)}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">Atualizar Status:</p>
+                        <p className="text-xs text-muted-foreground">Clique em uma etapa para atualizar o status do pedido.</p>
+                      </div>
+                      {canCancelPedido(selectedPedido.status) && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleCancelPedido(selectedPedido)}
+                          disabled={updatingStatus || cancelingPedido}
+                          className="gap-1"
+                        >
+                          {cancelingPedido ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
+                          {cancelingPedido ? 'Cancelando...' : 'Cancelar pedido'}
+                        </Button>
+                      )}
+                    </div>
+
+                    <StatusProgressCircles
+                      pedido={selectedPedido}
+                      onClickStep={handleUpdateStatus}
                       disabled={updatingStatus || cancelingPedido}
-                      className="gap-1"
-                    >
-                      {cancelingPedido ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
-                      {cancelingPedido ? 'Cancelando...' : 'Cancelar pedido'}
-                    </Button>
-                  )}
-                </div>
+                    />
 
-                <StatusProgressCircles
-                  pedido={selectedPedido}
-                  onClickStep={handleUpdateStatus}
-                  disabled={updatingStatus || cancelingPedido}
-                />
-
-                {(updatingStatus || cancelingPedido) && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" /> {cancelingPedido ? 'Cancelando...' : 'Atualizando...'}
+                    {(updatingStatus || cancelingPedido) && (
+                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" /> {cancelingPedido ? 'Cancelando...' : 'Atualizando...'}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           )}
         </DialogContent>
