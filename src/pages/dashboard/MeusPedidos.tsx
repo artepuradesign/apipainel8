@@ -526,7 +526,9 @@ const MeusPedidos = () => {
 
   const getTypeBadgeClass = (type: string) => type === 'pdf-rg'
     ? 'bg-violet-500/10 text-violet-600 border-violet-500/20'
-    : 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+    : type === 'pdf-personalizado'
+    ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+    : 'bg-sky-500/10 text-sky-600 border-sky-500/20';
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto">
