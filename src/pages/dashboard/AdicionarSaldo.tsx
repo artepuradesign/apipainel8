@@ -585,7 +585,7 @@ const AdicionarSaldo = () => {
           valorFinalPagamento={valorFinalPagamento}
           cupomAplicado={cupomAplicado}
           canProceed={canProceed}
-          isProcessing={loading}
+          isProcessing={loading || cardLoading}
           onPayment={handlePayment}
           hidePresets={fromModule}
         />
