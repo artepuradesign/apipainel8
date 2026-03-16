@@ -369,6 +369,25 @@ const MeusPedidos = () => {
         });
       }
 
+      if (resDominio.success && resDominio.data?.data) {
+        resDominio.data.data.forEach((p) => {
+          const isCanceled = p.status === 'cancelado';
+          allPedidos.push({
+            type: 'dominio-com',
+            id: p.id,
+            status: isCanceled ? 'cancelado' : 'realizado',
+            preco_pago: p.valor_cobrado,
+            created_at: p.created_at,
+            realizado_at: p.created_at,
+            pagamento_confirmado_at: null,
+            em_confeccao_at: null,
+            entregue_at: null,
+            nome_solicitante: p.nome_solicitante,
+            dominio_completo: p.dominio_completo,
+          });
+        });
+      }
+
       allPedidos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setPedidos(allPedidos);
     } catch {
