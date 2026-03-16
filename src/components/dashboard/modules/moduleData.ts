@@ -123,5 +123,12 @@ export const serviceModules = [
     icon: Calendar,
     path: "/dashboard/busca-nascimento",
     price: "2,00"
+  },
+  {
+    title: "DOMÍNIO .COM",
+    description: "Registro de domínio .com",
+    icon: Globe,
+    path: "/dashboard/sistemas-dominio-com",
+    price: "2,00"
   }
 ];
