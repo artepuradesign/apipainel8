@@ -77,12 +77,12 @@ const SistemasDominioCom = () => {
     : { discountedPrice: modulePrice, hasDiscount: false };
 
   const totalBalance = (balance.saldo || 0) + (balance.saldo_plano || 0);
+  const hasSufficientBalance = totalBalance >= finalPrice;
   const canRegister = Boolean(
     user &&
     nomeSolicitante.trim() &&
     availability?.disponivel &&
-    finalPrice > 0 &&
-    totalBalance >= finalPrice
+    finalPrice > 0
   );
 
   const loadRegistros = useCallback(async () => {
