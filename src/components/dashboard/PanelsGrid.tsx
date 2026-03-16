@@ -348,8 +348,10 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
     // Para módulos de pedidos (PDF), permitir acesso mesmo sem saldo se tem registros
     const isPdfModule = moduleRoute.includes('/pdf-personalizado') || moduleRoute.includes('/pdf-rg');
     
-    if (totalAvailableBalance < finalPrice && !userHasRecords && !isPdfModule) {
-      const remaining = Math.max(finalPrice - totalAvailableBalance, 0.01);
+    const hasSufficientBalance = hasEnoughBalance(totalAvailableBalance, finalPrice);
+
+    if (!hasSufficientBalance && !userHasRecords && !isPdfModule) {
+      const remaining = getMissingAmount(finalPrice, totalAvailableBalance);
       toast.error(
         `Saldo insuficiente para ${module.title}! Valor necessário: R$ ${finalPrice.toFixed(2)}`,
         {
@@ -362,7 +364,7 @@ const PanelsGrid: React.FC<PanelsGridProps> = ({ activePanels }) => {
       return;
     }
 
-    if (totalAvailableBalance < finalPrice && (userHasRecords || isPdfModule)) {
+    if (!hasSufficientBalance && (userHasRecords || isPdfModule)) {
       toast.info(
         `Você pode visualizar seu histórico em ${module.title}, mas precisa de saldo para novos pedidos.`,
         { duration: 4000 }
