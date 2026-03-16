@@ -487,37 +487,40 @@ const AdicionarSaldo = () => {
           </CardHeader>
           <CardContent className="space-y-4 sm:space-y-6">
             <div className="grid grid-cols-1 gap-2 sm:gap-3">
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.id}
-                  className={`flex items-center p-3 sm:p-4 border rounded-lg transition-all duration-200 ${
-                    paymentMethod === method.id
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border hover:border-primary/50 hover:shadow-sm cursor-pointer'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={method.id}
-                    checked={paymentMethod === method.id}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="sr-only"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                      <span className="font-medium text-sm sm:text-base">{method.name}</span>
-                      <span className="text-[10px] sm:text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-medium">
-                        Instantâneo
-                      </span>
+              {paymentMethods.map((method) => {
+                const Icon = method.icon;
+                return (
+                  <label
+                    key={method.id}
+                    className={`flex items-center p-3 sm:p-4 border rounded-lg transition-all duration-200 ${
+                      paymentMethod === method.id
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-border hover:border-primary/50 hover:shadow-sm cursor-pointer'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method.id}
+                      checked={paymentMethod === method.id}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="sr-only"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                        <span className="font-medium text-sm sm:text-base">{method.name}</span>
+                        <span className="text-[10px] sm:text-xs bg-primary/10 text-primary px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-medium">
+                          {method.badge}
+                        </span>
+                      </div>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 ml-6 sm:ml-8">
+                        {method.description}
+                      </p>
                     </div>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 ml-6 sm:ml-8">
-                      {method.description}
-                    </p>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                );
+              })}
             </div>
 
             {/* Cupom de Desconto */}
