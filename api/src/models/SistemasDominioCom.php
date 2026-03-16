@@ -116,20 +116,8 @@ class SistemasDominioCom extends BaseModel {
                 throw new Exception('Usuário não encontrado');
             }
 
-            $discountMap = [
-                'Pré-Pago' => 0,
-                'Rainha de Ouros' => 5,
-                'Rainha de Paus' => 10,
-                'Rainha de Copas' => 15,
-                'Rainha de Espadas' => 20,
-                'Rei de Ouros' => 20,
-                'Rei de Paus' => 30,
-                'Rei de Copas' => 40,
-                'Rei de Espadas' => 50,
-            ];
-
-            $planName = $userData['tipoplano'] ?? 'Pré-Pago';
-            $discountPercent = (float)($discountMap[$planName] ?? 0);
+            $planName = trim((string)($userData['tipoplano'] ?? 'Pré-Pago'));
+            $discountPercent = $this->resolveDiscountPercent($userId, $planName);
             $descontoValor = round(($precoOriginal * $discountPercent) / 100, 2);
             $valorFinal = round(max($precoOriginal - $descontoValor, 0.01), 2);
 
