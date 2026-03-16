@@ -171,7 +171,7 @@ const statusBadgeColors: Record<PdfRgStatus, string> = {
 const getStatusIndex = (status: PdfRgStatus) => status === 'cancelado' ? -1 : STATUS_ORDER.indexOf(status);
 
 type UnifiedPedido = {
-  type: 'pdf-rg' | 'pdf-personalizado';
+  type: 'pdf-rg' | 'pdf-personalizado' | 'dominio-com';
   id: number;
   status: PdfRgStatus;
   preco_pago: number | string;
@@ -195,6 +195,7 @@ type UnifiedPedido = {
   qr_plan?: string;
   nome_solicitante?: string;
   descricao_alteracoes?: string;
+  dominio_completo?: string;
 };
 
 const MeusPedidos = () => {
