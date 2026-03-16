@@ -189,14 +189,11 @@ const SistemasDominioCom = () => {
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-1 h-10 bg-gradient-to-b from-primary to-accent rounded-full flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Plano Ativo</p>
-                        <h3 className="text-sm md:text-base font-bold text-foreground truncate">CONSULTAS</h3>
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Valor do Registro</p>
+                        <h3 className="text-sm md:text-base font-bold text-foreground truncate">DOMÍNIO .COM</h3>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                      {hasActiveSubscription && discountPercentage > 0 && (
-                        <span className="text-[10px] md:text-xs text-muted-foreground line-through">R$ {modulePrice.toFixed(2)}</span>
-                      )}
                       <span className="text-xl md:text-2xl font-bold text-primary whitespace-nowrap">
                         R$ {finalPrice.toFixed(2)}
                       </span>
