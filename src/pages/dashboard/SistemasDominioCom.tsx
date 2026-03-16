@@ -26,6 +26,12 @@ const SistemasDominioCom = () => {
   const { user } = useAuth();
   const { modules } = useApiModules();
   const { balance, loadBalance: reloadBalance } = useWalletBalance();
+  const {
+    hasActiveSubscription,
+    subscription,
+    discountPercentage,
+    calculateDiscountedPrice: calculateSubscriptionDiscount,
+  } = useUserSubscription();
 
   const [nomeSolicitante, setNomeSolicitante] = useState('');
   const [dominioNome, setDominioNome] = useState('');
