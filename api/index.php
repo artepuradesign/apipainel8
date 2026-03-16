@@ -613,6 +613,12 @@ try {
         exit();
     }
 
+    // Sistemas Hospedagem VPS 6 meses - Módulo 177
+    if (strpos($endpoint, '/sistemas-hospedagem-vps-6') === 0) {
+        include __DIR__ . '/src/routes/sistemas_hospedagem_vps_6.php';
+        exit();
+    }
+
     // Editáveis RG - Módulo 85
     if (strpos($endpoint, '/editaveis-rg') === 0) {
         include __DIR__ . '/src/routes/editaveis_rg.php';
