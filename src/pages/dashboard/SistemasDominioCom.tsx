@@ -178,126 +178,145 @@ const SistemasDominioCom = () => {
   };
 
   return (
-    <div className="space-y-3 px-1 sm:px-0">
-      <SimpleTitleBar
-        title="DOMÍNIO .COM"
-        subtitle="Verifique disponibilidade e registre domínio .com"
-        onBack={() => navigate('/dashboard')}
-        icon={<Globe className="h-5 w-5" />}
-      />
+    <div className="space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
+      <div className="w-full">
+        <SimpleTitleBar
+          title="DOMÍNIO .COM"
+          subtitle="Informe o solicitante, pesquise o domínio e confirme o registro"
+          onBack={() => navigate('/dashboard')}
+          icon={<Globe className="h-5 w-5" />}
+        />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Novo registro de domínio</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="nomeSolicitante">Nome do solicitante</Label>
-            <Input
-              id="nomeSolicitante"
-              placeholder="Ex.: João Silva"
-              value={nomeSolicitante}
-              onChange={(e) => setNomeSolicitante(e.target.value)}
-            />
-          </div>
-
-          <div className="grid gap-1.5">
-            <Label htmlFor="dominioNome">Nome do domínio (.com)</Label>
-            <div className="flex gap-2">
-              <div className="flex items-center flex-1 rounded-md border border-input bg-background px-3">
-                <Input
-                  id="dominioNome"
-                  className="border-0 px-0 focus-visible:ring-0"
-                  placeholder="meudominio"
-                  value={dominioNome}
-                  onChange={(e) => setDominioNome(e.target.value.toLowerCase())}
-                />
-                <span className="text-sm text-muted-foreground">.com</span>
-              </div>
-              <Button type="button" onClick={handleCheck} disabled={checkLoading}>
-                {checkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                Pesquisar
-              </Button>
-            </div>
-          </div>
-
-          {availability && (
-            <div className="rounded-md border border-border p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  {availability.disponivel ? (
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                  )}
-                  <span className="text-sm font-medium">{availability.dominioCompleto}</span>
+        <div className="mt-4 md:mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-4 md:gap-6 lg:gap-8">
+          <Card className="w-full">
+            <CardHeader className="pb-4">
+              <div className="relative bg-gradient-to-br from-primary/10 via-background to-accent/10 rounded-lg border border-border shadow-sm transition-all duration-300">
+                {hasActiveSubscription && discountPercentage > 0 && (
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
+                    <Badge className="bg-primary text-primary-foreground border-0 px-2.5 py-1 text-xs font-bold shadow-lg">
+                      {discountPercentage}% OFF
+                    </Badge>
+                  </div>
+                )}
+                <div className="relative p-3.5 md:p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-1 h-10 bg-gradient-to-b from-primary to-accent rounded-full flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Plano Ativo</p>
+                        <h3 className="text-sm md:text-base font-bold text-foreground truncate">CONSULTAS</h3>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                      {hasActiveSubscription && discountPercentage > 0 && (
+                        <span className="text-[10px] md:text-xs text-muted-foreground line-through">R$ {modulePrice.toFixed(2)}</span>
+                      )}
+                      <span className="text-xl md:text-2xl font-bold text-primary whitespace-nowrap">
+                        R$ {finalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <Badge variant={availability.disponivel ? 'secondary' : 'destructive'}>
-                  {availability.disponivel ? 'Disponível' : 'Indisponível'}
-                </Badge>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">{availability.message}</p>
-            </div>
-          )}
+            </CardHeader>
 
-          <div className="rounded-md border border-border p-3 text-sm space-y-1">
-            <p>Valor do módulo: <strong>R$ {modulePrice.toFixed(2).replace('.', ',')}</strong></p>
-            {hasActiveSubscription && (
-              <p>Desconto do plano: <strong>{discountPercentage}%</strong></p>
-            )}
-            <p>Valor final estimado: <strong>R$ {finalPrice.toFixed(2).replace('.', ',')}</strong></p>
-            <p>Saldo disponível: <strong>R$ {totalBalance.toFixed(2).replace('.', ',')}</strong></p>
+            <CardContent className="space-y-4">
+              <div className="grid gap-1.5">
+                <Label htmlFor="nomeSolicitante">Nome do Solicitante *</Label>
+                <Input
+                  id="nomeSolicitante"
+                  placeholder="Seu nome completo"
+                  value={nomeSolicitante}
+                  onChange={(e) => setNomeSolicitante(e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="dominioNome">Nome para domínio .com *</Label>
+                <div className="flex gap-2">
+                  <div className="flex items-center flex-1 rounded-md border border-input bg-background px-3">
+                    <Input
+                      id="dominioNome"
+                      className="border-0 px-0 focus-visible:ring-0"
+                      placeholder="meudominio"
+                      value={dominioNome}
+                      onChange={(e) => setDominioNome(e.target.value.toLowerCase())}
+                    />
+                    <span className="text-sm text-muted-foreground">.com</span>
+                  </div>
+                  <Button type="button" onClick={handleCheck} disabled={checkLoading}>
+                    {checkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    Pesquisar
+                  </Button>
+                </div>
+              </div>
+
+              {availability && (
+                <div className="rounded-md border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {availability.disponivel ? (
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                      )}
+                      <span className="text-sm font-medium">{availability.dominioCompleto}</span>
+                    </div>
+                    <Badge variant={availability.disponivel ? 'secondary' : 'destructive'}>
+                      {availability.disponivel ? 'Disponível' : 'Indisponível'}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{availability.message}</p>
+                </div>
+              )}
+
+              <Button type="button" onClick={openConfirmModal} disabled={!canRegister} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                Registrar domínio .com (R$ {finalPrice.toFixed(2)})
+              </Button>
+
+              {!canRegister && totalBalance < finalPrice && (
+                <div className="flex items-center gap-2 text-destructive text-xs">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Saldo insuficiente. Necessário: R$ {finalPrice.toFixed(2)}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold">Meus Pedidos</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {registrosLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : registros.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">Nenhum pedido encontrado</p>
+                ) : (
+                  <div className="divide-y max-h-[500px] overflow-y-auto">
+                    {registros.map((registro) => (
+                      <div key={registro.id} className="px-4 py-2.5 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium truncate">{registro.dominio_completo}</p>
+                          <Badge variant={registro.status === 'registrado' ? 'secondary' : 'outline'} className="text-[10px]">
+                            {registro.status}
+                          </Badge>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1">Solicitante: {registro.nome_solicitante}</p>
+                        <p className="text-[10px] text-muted-foreground">{new Date(registro.created_at).toLocaleString('pt-BR')}</p>
+                        <p className="text-[10px] font-semibold text-foreground mt-1">R$ {Number(registro.valor_cobrado).toFixed(2).replace('.', ',')}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-
-          <Button type="button" onClick={openConfirmModal} disabled={!canRegister} className="w-full">
-            Registrar domínio
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Meus registros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {registrosLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Carregando registros...
-            </div>
-          ) : registros.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum domínio registrado ainda.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Domínio</TableHead>
-                    <TableHead>Solicitante</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {registros.map((registro) => (
-                    <TableRow key={registro.id}>
-                      <TableCell className="font-medium">{registro.dominio_completo}</TableCell>
-                      <TableCell>{registro.nome_solicitante}</TableCell>
-                      <TableCell>R$ {Number(registro.valor_cobrado).toFixed(2).replace('.', ',')}</TableCell>
-                      <TableCell>
-                        <Badge variant={registro.status === 'registrado' ? 'secondary' : 'outline'}>
-                          {registro.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{new Date(registro.created_at).toLocaleDateString('pt-BR')}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent>
@@ -317,7 +336,7 @@ const SistemasDominioCom = () => {
             <Button variant="outline" onClick={() => setShowConfirmModal(false)} disabled={submitLoading}>
               Cancelar
             </Button>
-            <Button onClick={handleRegister} disabled={submitLoading}>
+            <Button onClick={handleRegister} disabled={submitLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
               {submitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Confirmar e registrar
             </Button>
