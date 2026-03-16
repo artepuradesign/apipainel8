@@ -805,7 +805,7 @@ const AdminPedidos = () => {
 
   const renderAnexos = () => {
     if (!selectedPedido) return null;
-    if (selectedPedido.type === 'dominio-com') return null;
+    if (selectedPedido.type === 'dominio-com' || selectedPedido.type === 'dominio-com-br' || selectedPedido.type === 'vps-6') return null;
 
     const raw = selectedPedido.type === 'pdf-rg' ? selectedPedido.raw_rg : selectedPedido.raw_personalizado;
     if (!raw) return null;
