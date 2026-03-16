@@ -99,7 +99,39 @@ class SistemasDominioComController {
             if (!$input) {
                 Response::error('Dados inválidos', 400);
                 return;
+    public function cancelarAdmin(int $id) {
+        try {
+            $userId = AuthMiddleware::getCurrentUserId();
+            if (!$userId) {
+                Response::error('Usuário não autenticado', 401);
+                return;
             }
+
+            if (!$this->isAdminOrSupport((int)$userId)) {
+                Response::error('Acesso negado', 403);
+                return;
+            }
+
+            if ($id <= 0) {
+                Response::error('ID inválido', 400);
+                return;
+            }
+
+            $this->model->cancelById($id);
+            Response::success(['id' => $id, 'status' => 'cancelado'], 'Pedido cancelado com sucesso');
+        } catch (Exception $e) {
+            Response::error('Erro ao cancelar pedido: ' . $e->getMessage(), 500);
+        }
+    }
+
+    private function isAdminOrSupport(int $userId): bool {
+        $stmt = $this->model->db->prepare("SELECT user_role FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $role = $row['user_role'] ?? '';
+        return in_array($role, ['admin', 'suporte'], true);
+    }
+}
 
             $result = $this->model->registerDomain($input, (int)$userId);
             Response::success($result, 'Domínio registrado com sucesso');
