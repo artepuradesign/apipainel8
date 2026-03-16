@@ -183,18 +183,18 @@ const SistemasDominioCom = () => {
         <div className="mt-4 md:mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-4 md:gap-6 lg:gap-8">
           <Card className="w-full">
             <CardHeader className="pb-4">
-              <div className="relative bg-gradient-to-br from-primary/10 via-background to-accent/10 rounded-lg border border-border shadow-sm transition-all duration-300">
+              <div className="relative bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30 dark:from-gray-800/50 dark:via-gray-800 dark:to-blue-900/20 rounded-lg border border-blue-100/50 dark:border-blue-800/30 shadow-sm transition-all duration-300">
                 <div className="relative p-3.5 md:p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-1 h-10 bg-gradient-to-b from-primary to-accent rounded-full flex-shrink-0" />
+                      <div className="w-1 h-10 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full flex-shrink-0" />
                       <div className="min-w-0">
                         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Valor do Registro</p>
                         <h3 className="text-sm md:text-base font-bold text-foreground truncate">DOMÍNIO .COM</h3>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                      <span className="text-xl md:text-2xl font-bold text-primary whitespace-nowrap">
+                      <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent whitespace-nowrap">
                         R$ {finalPrice.toFixed(2)}
                       </span>
                     </div>
