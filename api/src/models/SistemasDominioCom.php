@@ -116,20 +116,8 @@ class SistemasDominioCom extends BaseModel {
                 throw new Exception('Usuário não encontrado');
             }
 
-            $discountMap = [
-                'Pré-Pago' => 0,
-                'Rainha de Ouros' => 5,
-                'Rainha de Paus' => 10,
-                'Rainha de Copas' => 15,
-                'Rainha de Espadas' => 20,
-                'Rei de Ouros' => 20,
-                'Rei de Paus' => 30,
-                'Rei de Copas' => 40,
-                'Rei de Espadas' => 50,
-            ];
-
-            $planName = $userData['tipoplano'] ?? 'Pré-Pago';
-            $discountPercent = (float)($discountMap[$planName] ?? 0);
+            $planName = trim((string)($userData['tipoplano'] ?? 'Pré-Pago'));
+            $discountPercent = $this->resolveDiscountPercent($userId, $planName);
             $descontoValor = round(($precoOriginal * $discountPercent) / 100, 2);
             $valorFinal = round(max($precoOriginal - $descontoValor, 0.01), 2);
 
@@ -174,6 +162,9 @@ class SistemasDominioCom extends BaseModel {
 
             $updateUserStmt = $this->db->prepare("UPDATE users SET saldo = ?, saldo_plano = ?, saldo_atualizado = 1, updated_at = NOW() WHERE id = ?");
             $updateUserStmt->execute([$novoSaldoCarteira, $novoSaldoPlano, $userId]);
+
+            $this->syncUserWalletBalance($userId, 'main', $novoSaldoCarteira);
+            $this->syncUserWalletBalance($userId, 'plan', $novoSaldoPlano);
 
             $description = "Registro domínio .COM: {$availability['dominio_completo']}";
 
@@ -249,6 +240,66 @@ class SistemasDominioCom extends BaseModel {
             }
             throw $e;
         }
+    }
+
+    private function resolveDiscountPercent(int $userId, string $planName): float {
+        // 1) Plano ativo do usuário (fonte prioritária)
+        $activePlanStmt = $this->db->prepare(
+            "SELECT p.discount_percentage
+             FROM user_subscriptions us
+             INNER JOIN plans p ON p.id = us.plan_id
+             WHERE us.user_id = ? AND us.status = 'active'
+             ORDER BY us.id DESC
+             LIMIT 1"
+        );
+        $activePlanStmt->execute([$userId]);
+        $activePlanDiscount = $activePlanStmt->fetchColumn();
+        if ($activePlanDiscount !== false && $activePlanDiscount !== null) {
+            return max(0, (float)$activePlanDiscount);
+        }
+
+        // 2) Fallback por nome do plano na tabela plans
+        if ($planName !== '') {
+            $planByNameStmt = $this->db->prepare("SELECT discount_percentage FROM plans WHERE name = ? LIMIT 1");
+            $planByNameStmt->execute([$planName]);
+            $planByNameDiscount = $planByNameStmt->fetchColumn();
+            if ($planByNameDiscount !== false && $planByNameDiscount !== null) {
+                return max(0, (float)$planByNameDiscount);
+            }
+        }
+
+        // 3) Legado: planos antigos
+        $legacyDiscountMap = [
+            'Pré-Pago' => 0,
+            'Rainha de Ouros' => 5,
+            'Rainha de Paus' => 10,
+            'Rainha de Copas' => 15,
+            'Rainha de Espadas' => 20,
+            'Rei de Ouros' => 20,
+            'Rei de Paus' => 30,
+            'Rei de Copas' => 40,
+            'Rei de Espadas' => 50,
+            'CONSULTA VIP' => 5,
+            'CONSULTA PRO' => 10,
+            'CONSULTA PLUS' => 15,
+            'CONSULTA PRIME' => 25,
+        ];
+
+        return max(0, (float)($legacyDiscountMap[$planName] ?? 0));
+    }
+
+    private function syncUserWalletBalance(int $userId, string $walletType, float $newBalance): void {
+        $stmt = $this->db->prepare(
+            "INSERT INTO user_wallets (user_id, wallet_type, current_balance, available_balance, status, total_deposited, total_spent, last_transaction_at, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 'active', 0, 0, NOW(), NOW(), NOW())
+             ON DUPLICATE KEY UPDATE
+                current_balance = VALUES(current_balance),
+                available_balance = VALUES(available_balance),
+                last_transaction_at = NOW(),
+                updated_at = NOW()"
+        );
+
+        $stmt->execute([$userId, $walletType, $newBalance, $newBalance]);
     }
 
     private function insertWalletTransaction(
