@@ -827,8 +827,8 @@ const AdminPedidos = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className={p.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
-                        {p.type === 'pdf-personalizado' ? <FileEdit className="h-3 w-3 mr-1" /> : <Package className="h-3 w-3 mr-1" />}
+                      <Badge variant="outline" className={p.type === 'pdf-personalizado' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' : p.type === 'dominio-com' ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : 'bg-sky-500/10 text-sky-600 border-sky-500/30'}>
+                        {p.type === 'pdf-personalizado' ? <FileEdit className="h-3 w-3 mr-1" /> : p.type === 'dominio-com' ? <Globe className="h-3 w-3 mr-1" /> : <Package className="h-3 w-3 mr-1" />}
                         {typeLabel(p.type)}
                       </Badge>
                       <span className="font-medium text-sm">#{p.id}</span>
