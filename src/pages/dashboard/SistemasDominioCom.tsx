@@ -270,7 +270,7 @@ const SistemasDominioCom = () => {
                 </div>
               )}
 
-              <Button type="button" onClick={openConfirmModal} disabled={!canRegister} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+              <Button type="button" onClick={openConfirmModal} disabled={!canRegister} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                 Registrar domínio .com (R$ {finalPrice.toFixed(2)})
               </Button>
 
