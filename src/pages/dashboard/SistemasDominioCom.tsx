@@ -174,7 +174,8 @@ const SistemasDominioCom = () => {
       setShowConfirmModal(false);
       setDominioNome('');
       setAvailability(null);
-      await Promise.all([reloadBalance(), loadRegistros()]);
+      await reloadBalance();
+      navigate('/dashboard/meus-pedidos');
     } catch {
       toast.error('Erro ao registrar domínio');
     } finally {
