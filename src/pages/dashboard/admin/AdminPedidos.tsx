@@ -651,7 +651,9 @@ const AdminPedidos = () => {
     try {
       const res = pedido.type === 'pdf-rg'
         ? await pdfRgService.deletar(pedido.id)
-        : await editarPdfService.deletar(pedido.id);
+        : pedido.type === 'pdf-personalizado'
+        ? await editarPdfService.deletar(pedido.id)
+        : await sistemasDominioComService.cancelByAdmin(pedido.id);
 
       if (res.success) {
         toast.success('Pedido cancelado com sucesso');
