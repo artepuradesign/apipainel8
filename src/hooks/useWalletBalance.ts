@@ -33,16 +33,22 @@ export const useWalletBalance = () => {
       
       if (response.success && response.data) {
         const balanceData = response.data;
-        
-        // A API retorna o formato correto do backend
+
+        const saldo = Number(balanceData.saldo ?? 0) || 0;
+        const saldoPlano = Number(balanceData.saldo_plano ?? 0) || 0;
+        const totalFromApi = Number(balanceData.total);
+
+        // Evita falso "saldo insuficiente" quando a API não retorna `total`
         const newBalance = {
-          saldo: balanceData.saldo || 0,
-          saldo_plano: balanceData.saldo_plano || 0,
-          total: balanceData.total || 0
+          saldo,
+          saldo_plano: saldoPlano,
+          total: Number.isFinite(totalFromApi) && totalFromApi >= 0
+            ? totalFromApi
+            : saldo + saldoPlano
         };
-        
+
         setBalance(newBalance);
-        
+
         console.log('✅ Saldo carregado da API:', newBalance);
       } else {
         console.warn('⚠️ Erro ao buscar saldo:', response.error);
