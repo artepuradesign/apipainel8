@@ -63,7 +63,13 @@ const SistemasDominioCom = () => {
     return getModulePrice(MODULE_ROUTE);
   }, [currentModule?.price]);
 
-  const finalPrice = modulePrice;
+  const userPlan = hasActiveSubscription && subscription
+    ? subscription.plan_name
+    : (user ? localStorage.getItem(`user_plan_${user.id}`) || 'Pré-Pago' : 'Pré-Pago');
+
+  const { discountedPrice: finalPrice, hasDiscount } = hasActiveSubscription && modulePrice > 0
+    ? calculateSubscriptionDiscount(modulePrice)
+    : { discountedPrice: modulePrice, hasDiscount: false };
 
   const totalBalance = (balance.saldo || 0) + (balance.saldo_plano || 0);
   const canRegister = Boolean(
