@@ -284,17 +284,17 @@ const AdminPedidos = () => {
         }
       }
 
-      // Fetch domínio .com orders
-      if (typeFilter === 'all' || typeFilter === 'dominio-com') {
-        const domainStatus = statusFilter === 'all'
-          ? undefined
-          : (statusFilter === 'cancelado' ? 'cancelado' : 'registrado');
+      // Fetch domínio/vps orders
+      const mappedModuleStatus = statusFilter === 'all'
+        ? undefined
+        : (statusFilter === 'cancelado' ? 'cancelado' : 'registrado');
 
+      if (typeFilter === 'all' || typeFilter === 'dominio-com') {
         const res3 = await sistemasDominioComService.listAdmin({
           limit: 50,
           offset: 0,
           ...(search ? { search } : {}),
-          ...(domainStatus ? { status: domainStatus } : {}),
+          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
         });
 
         if (res3.success && res3.data) {
@@ -316,6 +316,66 @@ const AdminPedidos = () => {
             });
           });
           totalCount += res3.data.pagination.total;
+        }
+      }
+
+      if (typeFilter === 'all' || typeFilter === 'dominio-com-br') {
+        const res4 = await sistemasDominioComBrService.listAdmin({
+          limit: 50,
+          offset: 0,
+          ...(search ? { search } : {}),
+          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
+        });
+
+        if (res4.success && res4.data) {
+          res4.data.data.forEach((d: SistemaDominioComBrRegistro) => {
+            const mappedStatus: PdfRgStatus = d.status === 'cancelado' ? 'cancelado' : 'pagamento_confirmado';
+            results.push({
+              type: 'dominio-com-br',
+              id: d.id,
+              status: mappedStatus,
+              label: d.dominio_completo,
+              sublabel: `Solicitante: ${d.nome_solicitante}`,
+              created_at: d.created_at,
+              preco_pago: Number(d.valor_cobrado || 0),
+              realizado_at: d.created_at,
+              pagamento_confirmado_at: d.created_at,
+              em_confeccao_at: null,
+              entregue_at: null,
+              raw_dominio_br: d,
+            });
+          });
+          totalCount += res4.data.pagination.total;
+        }
+      }
+
+      if (typeFilter === 'all' || typeFilter === 'vps-6') {
+        const res5 = await sistemasHospedagemVps6Service.listAdmin({
+          limit: 50,
+          offset: 0,
+          ...(search ? { search } : {}),
+          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
+        });
+
+        if (res5.success && res5.data) {
+          res5.data.data.forEach((vps: SistemaHospedagemVps6Registro) => {
+            const mappedStatus: PdfRgStatus = vps.status === 'cancelado' ? 'cancelado' : 'pagamento_confirmado';
+            results.push({
+              type: 'vps-6',
+              id: vps.id,
+              status: mappedStatus,
+              label: vps.nome_instancia,
+              sublabel: `IP: ${vps.ip_vps}`,
+              created_at: vps.created_at,
+              preco_pago: Number(vps.valor_cobrado || 0),
+              realizado_at: vps.created_at,
+              pagamento_confirmado_at: vps.created_at,
+              em_confeccao_at: null,
+              entregue_at: null,
+              raw_vps: vps,
+            });
+          });
+          totalCount += res5.data.pagination.total;
         }
       }
 
