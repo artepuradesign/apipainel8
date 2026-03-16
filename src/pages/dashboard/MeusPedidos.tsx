@@ -81,6 +81,8 @@ const textByLocale: Record<Locale, any> = {
     pdfUnavailable: 'PDF not available yet',
     typeRg: 'ID PDF',
     typeCustom: 'Custom PDF',
+    typeDomain: 'Domain .COM',
+    domain: 'Domain',
     confirmCancel: 'Are you sure you want to cancel this order?',
     canceledSuccess: 'Order canceled successfully',
     cancelError: 'Error canceling order',
