@@ -11,7 +11,7 @@ import { AlertCircle, CheckCircle2, Globe, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiModules } from '@/hooks/useApiModules';
-import { useUserSubscription } from '@/hooks/useUserSubscription';
+
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { getModulePrice } from '@/utils/modulePrice';
 import { sistemasDominioComService, type SistemaDominioComRegistro } from '@/services/sistemasDominioComService';
@@ -26,11 +26,6 @@ const SistemasDominioCom = () => {
   const { user } = useAuth();
   const { modules } = useApiModules();
   const { balance, loadBalance: reloadBalance } = useWalletBalance();
-  const {
-    hasActiveSubscription,
-    discountPercentage,
-    calculateDiscountedPrice: calculateSubscriptionDiscount,
-  } = useUserSubscription();
 
   const [nomeSolicitante, setNomeSolicitante] = useState('');
   const [dominioNome, setDominioNome] = useState('');
@@ -62,9 +57,7 @@ const SistemasDominioCom = () => {
     return getModulePrice(MODULE_ROUTE);
   }, [currentModule?.price]);
 
-  const { discountedPrice: finalPrice } = hasActiveSubscription && modulePrice > 0
-    ? calculateSubscriptionDiscount(modulePrice)
-    : { discountedPrice: modulePrice };
+  const finalPrice = modulePrice;
 
   const totalBalance = (balance.saldo || 0) + (balance.saldo_plano || 0);
   const canRegister = Boolean(
@@ -191,26 +184,16 @@ const SistemasDominioCom = () => {
           <Card className="w-full">
             <CardHeader className="pb-4">
               <div className="relative bg-gradient-to-br from-primary/10 via-background to-accent/10 rounded-lg border border-border shadow-sm transition-all duration-300">
-                {hasActiveSubscription && discountPercentage > 0 && (
-                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
-                    <Badge className="bg-primary text-primary-foreground border-0 px-2.5 py-1 text-xs font-bold shadow-lg">
-                      {discountPercentage}% OFF
-                    </Badge>
-                  </div>
-                )}
                 <div className="relative p-3.5 md:p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-1 h-10 bg-gradient-to-b from-primary to-accent rounded-full flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Plano Ativo</p>
-                        <h3 className="text-sm md:text-base font-bold text-foreground truncate">CONSULTAS</h3>
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Valor do Registro</p>
+                        <h3 className="text-sm md:text-base font-bold text-foreground truncate">DOMÍNIO .COM</h3>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                      {hasActiveSubscription && discountPercentage > 0 && (
-                        <span className="text-[10px] md:text-xs text-muted-foreground line-through">R$ {modulePrice.toFixed(2)}</span>
-                      )}
                       <span className="text-xl md:text-2xl font-bold text-primary whitespace-nowrap">
                         R$ {finalPrice.toFixed(2)}
                       </span>
