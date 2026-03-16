@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscriptionService, UserSubscription, PlanInfo } from '@/services/subscriptionService';
+import { getDiscount } from '@/utils/planUtils';
 import { toast } from 'sonner';
 
 export interface UserPlanStatus {
@@ -50,12 +51,12 @@ export const useUserSubscription = () => {
         // Se há assinatura ativa, buscar informações do plano
         const planResponse = await subscriptionService.getPlanInfo(subscriptionResponse.data.plan_name || '');
         
-        // Usar APENAS o desconto configurado no plano (campo discount_percentage) / assinatura.
-        // Não usar fallback local (planUtils), para refletir exatamente a configuração do painel de Personalização.
+        // Prioridade: assinatura -> plano da API -> fallback por tipoplano (mapeamento padrão local)
+        const fallbackDiscountByPlanName = getDiscount(subscriptionResponse.data.plan_name || user.tipoplano || 'Pré-Pago');
         const finalDiscountPercentage =
           subscriptionResponse.data.discount_percentage ??
           planResponse.data?.discount_percentage ??
-          0;
+          fallbackDiscountByPlanName;
         
         console.log('✅ [USER_SUBSCRIPTION] Desconto calculado:', {
           subscriptionDiscount: subscriptionResponse.data.discount_percentage,
