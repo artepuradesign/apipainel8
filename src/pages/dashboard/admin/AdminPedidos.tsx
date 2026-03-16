@@ -671,8 +671,12 @@ const AdminPedidos = () => {
         res = await pdfRgService.deletar(pedido.id);
       } else if (pedido.type === 'pdf-personalizado') {
         res = await editarPdfService.deletar(pedido.id);
-      } else {
+      } else if (pedido.type === 'dominio-com') {
         res = await sistemasDominioComService.cancelByAdmin(pedido.id);
+      } else if (pedido.type === 'dominio-com-br') {
+        res = await sistemasDominioComBrService.cancelByAdmin(pedido.id);
+      } else {
+        res = await sistemasHospedagemVps6Service.cancelByAdmin(pedido.id);
       }
       if (res.success) {
         toast.success('Pedido atualizado com sucesso');
