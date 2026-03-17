@@ -45,6 +45,8 @@ switch ($method) {
     case 'POST':
         if (preg_match('#/sistemas-dominio-com/register/?$#', $path)) {
             $controller->registrar();
+        } elseif (preg_match('#/sistemas-dominio-com/(\d+)/admin-status/?$#', $path, $matches)) {
+            $controller->atualizarStatusAdmin((int)$matches[1]);
         } elseif (preg_match('#/sistemas-dominio-com/(\d+)/cancel/?$#', $path, $matches)) {
             $controller->cancelarAdmin((int)$matches[1]);
         } else {

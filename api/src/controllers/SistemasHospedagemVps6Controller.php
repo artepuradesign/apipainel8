@@ -120,6 +120,41 @@ class SistemasHospedagemVps6Controller {
         }
     }
 
+    public function atualizarStatusAdmin(int $id) {
+        try {
+            $userId = AuthMiddleware::getCurrentUserId();
+            if (!$userId) {
+                Response::error('Usuário não autenticado', 401);
+                return;
+            }
+
+            if (!$this->isAdminOrSupport((int)$userId)) {
+                Response::error('Acesso negado', 403);
+                return;
+            }
+
+            if ($id <= 0) {
+                Response::error('ID inválido', 400);
+                return;
+            }
+
+            $raw = file_get_contents('php://input');
+            $input = json_decode($raw, true);
+            if (!$input || !isset($input['status'])) {
+                Response::error('Status é obrigatório', 400);
+                return;
+            }
+
+            $status = trim((string)$input['status']);
+            $ipVps = isset($input['ip_vps']) ? trim((string)$input['ip_vps']) : null;
+
+            $row = $this->model->updateAdminWorkflow($id, $status, $ipVps);
+            Response::success($row, 'Status do pedido atualizado com sucesso');
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+
     public function obter(int $id) {
         try {
             $userId = AuthMiddleware::getCurrentUserId();
