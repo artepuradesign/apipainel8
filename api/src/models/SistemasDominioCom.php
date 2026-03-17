@@ -334,6 +334,25 @@ class SistemasDominioCom extends BaseModel {
         }
     }
 
+    private function ensureStatusEnum(): void {
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM {$this->table} LIKE 'status'");
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            $type = strtolower((string)($row['Type'] ?? ''));
+
+            $required = ['registrado', 'em_propagacao', 'finalizado', 'cancelado'];
+            $missing = array_filter($required, static fn($value) => strpos($type, "'{$value}'") === false);
+
+            if (!empty($missing)) {
+                $this->db->exec(
+                    "ALTER TABLE {$this->table} MODIFY COLUMN status ENUM('registrado','em_propagacao','finalizado','cancelado') NOT NULL DEFAULT 'registrado'"
+                );
+            }
+        } catch (Exception $e) {
+            // fallback silencioso para não bloquear a aplicação
+        }
+    }
+
     private function resolveDiscountPercent(int $userId, string $planName): float {
         // 1) Plano ativo do usuário (fonte prioritária)
         $activePlanStmt = $this->db->prepare(
