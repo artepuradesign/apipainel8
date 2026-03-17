@@ -79,7 +79,7 @@ class SistemasHospedagemVps6 extends BaseModel {
         $where = [];
         $params = [];
 
-        if ($status && in_array($status, ['registrado', 'cancelado'], true)) {
+        if ($status && in_array($status, ['registrado', 'em_configuracao', 'finalizado', 'cancelado'], true)) {
             $where[] = 'status = ?';
             $params[] = $status;
         }
