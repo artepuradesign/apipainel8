@@ -344,7 +344,9 @@ const AdminPedidos = () => {
           limit: 50,
           offset: 0,
           ...(search ? { search } : {}),
-          ...(domainStatusFilter ? { status: domainStatusFilter } : {}),
+          ...(domainStatusFilter
+            ? { status: domainStatusFilter as 'registrado' | 'em_propagacao' | 'finalizado' | 'cancelado' }
+            : {}),
         });
 
         if (res3.success && res3.data) {
