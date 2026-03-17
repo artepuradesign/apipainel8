@@ -241,6 +241,7 @@ const AdminPedidos = () => {
   const [cancelingPedido, setCancelingPedido] = useState(false);
   const [qrCadastroSelecionado, setQrCadastroSelecionado] = useState<QrRegistration | null>(null);
   const [qrCadastroLoading, setQrCadastroLoading] = useState(false);
+  const [workflowIp, setWorkflowIp] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadQrCadastroByPedido = useCallback(async (pedido: PdfRgPedido) => {
