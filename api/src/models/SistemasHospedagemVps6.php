@@ -6,6 +6,7 @@ class SistemasHospedagemVps6 extends BaseModel {
 
     public function __construct($db) {
         parent::__construct($db);
+        $this->ensureStatusEnum();
     }
 
     public function findByIdForUser(int $id, int $userId): ?array {
