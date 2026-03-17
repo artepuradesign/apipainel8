@@ -409,7 +409,9 @@ const AdminPedidos = () => {
           limit: 50,
           offset: 0,
           ...(search ? { search } : {}),
-          ...(vpsStatusFilter ? { status: vpsStatusFilter } : {}),
+          ...(vpsStatusFilter
+            ? { status: vpsStatusFilter as 'registrado' | 'em_configuracao' | 'finalizado' | 'cancelado' }
+            : {}),
         });
 
         if (res5.success && res5.data) {
