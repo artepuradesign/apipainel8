@@ -216,7 +216,7 @@ class SistemasHospedagemVps6 extends BaseModel {
                 $saldoUsado = 'plano';
             }
 
-            $ipVps = $this->generateIpv4Address();
+            $ipVps = '';
 
             $insertStmt = $this->db->prepare(
                 "INSERT INTO {$this->table}
