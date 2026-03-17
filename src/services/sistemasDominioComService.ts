@@ -8,7 +8,7 @@ export interface SistemaDominioComRegistro {
   nome_solicitante: string;
   dominio_nome: string;
   dominio_completo: string;
-  status: 'registrado' | 'cancelado';
+  status: 'registrado' | 'em_propagacao' | 'finalizado' | 'cancelado';
   valor_cobrado: number;
   desconto_aplicado: number;
   saldo_usado: 'plano' | 'carteira' | 'misto';
