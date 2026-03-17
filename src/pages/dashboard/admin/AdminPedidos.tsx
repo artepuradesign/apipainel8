@@ -470,6 +470,12 @@ const AdminPedidos = () => {
   const handleUpdateStatus = async (newStatus: PdfRgStatus) => {
     if (!selectedPedido) return;
 
+    const isPdfPedido = selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado';
+    if (!isPdfPedido) {
+      toast.info('Para este tipo de pedido, apenas o cancelamento está disponível neste painel.');
+      return;
+    }
+
     if (newStatus === 'entregue' && !pdfFile && !getExistingPdfNome()) {
       toast.error('É obrigatório enviar o arquivo PDF para marcar como Entregue.');
       return;
@@ -1008,114 +1014,122 @@ const AdminPedidos = () => {
             </div>
           ) : selectedPedido && (
             <div className="space-y-5">
-              {(selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado') && <StatusProgressCircles pedido={selectedPedido} />}
+              {(() => {
+                const isPdfPedido = selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado';
 
-              {renderDetailContent()}
-              {renderAnexos()}
+                return (
+                  <>
+                    {renderDetailContent()}
+                    {renderAnexos()}
 
-              {selectedPedido.type === 'pdf-rg' && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Cadastro QR vinculado:</p>
-                  {qrCadastroLoading ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Carregando QR Code...
-                    </div>
-                  ) : qrCadastroSelecionado ? (
-                    <QrCadastroCard registration={qrCadastroSelecionado} />
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Nenhum cadastro QR encontrado para este pedido.</p>
-                  )}
-                </div>
-              )}
-
-              {(selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado') && (
-                <>
-                  <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <Upload className="h-4 w-4" />
-                      Gerenciar PDF de Entrega
-                      {selectedPedido.status !== 'entregue' && <span className="text-xs text-destructive">(obrigatório para Entregue)</span>}
-                    </Label>
-
-                    {existingPdfNome && !pdfFile && (
-                      <div className="flex items-center justify-between bg-background rounded-md p-2 border gap-2">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-emerald-500" />
-                          PDF atual: <strong>{existingPdfNome}</strong>
-                        </p>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="h-7"
-                          onClick={handleDeletePdf}
-                          disabled={deletingPdf}
-                          title="Excluir PDF e voltar para produção"
-                        >
-                          {deletingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
-                          {deletingPdf ? 'Excluindo...' : 'Excluir (voltar produção)'}
-                        </Button>
+                    {selectedPedido.type === 'pdf-rg' && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Cadastro QR vinculado:</p>
+                        {qrCadastroLoading ? (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" /> Carregando QR Code...
+                          </div>
+                        ) : qrCadastroSelecionado ? (
+                          <QrCadastroCard registration={qrCadastroSelecionado} />
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Nenhum cadastro QR encontrado para este pedido.</p>
+                        )}
                       </div>
                     )}
 
-                    <Input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="application/pdf"
-                      onChange={handlePdfChange}
-                      className="cursor-pointer"
-                    />
-                    {pdfFile && (
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-emerald-600 flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" /> {pdfFile.name}
-                        </p>
-                        <Button
-                          size="sm"
-                          onClick={handleSavePdf}
-                          disabled={savingPdf}
-                          className="gap-1"
-                        >
-                          {savingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-                          {savingPdf ? 'Atualizando...' : 'Atualizar PDF'}
-                        </Button>
+                    {isPdfPedido && (
+                      <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <Upload className="h-4 w-4" />
+                          Gerenciar PDF de Entrega
+                          {selectedPedido.status !== 'entregue' && <span className="text-xs text-destructive">(obrigatório para Entregue)</span>}
+                        </Label>
+
+                        {existingPdfNome && !pdfFile && (
+                          <div className="flex items-center justify-between bg-background rounded-md p-2 border gap-2">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3 text-emerald-500" />
+                              PDF atual: <strong>{existingPdfNome}</strong>
+                            </p>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="h-7"
+                              onClick={handleDeletePdf}
+                              disabled={deletingPdf}
+                              title="Excluir PDF e voltar para produção"
+                            >
+                              {deletingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                              {deletingPdf ? 'Excluindo...' : 'Excluir (voltar produção)'}
+                            </Button>
+                          </div>
+                        )}
+
+                        <Input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="application/pdf"
+                          onChange={handlePdfChange}
+                          className="cursor-pointer"
+                        />
+                        {pdfFile && (
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-emerald-600 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" /> {pdfFile.name}
+                            </p>
+                            <Button
+                              size="sm"
+                              onClick={handleSavePdf}
+                              disabled={savingPdf}
+                              className="gap-1"
+                            >
+                              {savingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                              {savingPdf ? 'Atualizando...' : 'Atualizar PDF'}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium">Atualizar Status:</p>
-                        <p className="text-xs text-muted-foreground">Clique em uma etapa para atualizar o status do pedido.</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium">Controle do Pedido:</p>
+                          <p className="text-xs text-muted-foreground">
+                            {isPdfPedido
+                              ? 'Clique em uma etapa para atualizar o status do pedido.'
+                              : 'Para este tipo de pedido, o controle disponível é o cancelamento.'}
+                          </p>
+                        </div>
+                        {canCancelPedido(selectedPedido.status) && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleCancelPedido(selectedPedido)}
+                            disabled={updatingStatus || cancelingPedido}
+                            className="gap-1"
+                          >
+                            {cancelingPedido ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
+                            {cancelingPedido ? 'Cancelando...' : 'Cancelar pedido'}
+                          </Button>
+                        )}
                       </div>
-                      {canCancelPedido(selectedPedido.status) && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleCancelPedido(selectedPedido)}
-                          disabled={updatingStatus || cancelingPedido}
-                          className="gap-1"
-                        >
-                          {cancelingPedido ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
-                          {cancelingPedido ? 'Cancelando...' : 'Cancelar pedido'}
-                        </Button>
+
+                      <StatusProgressCircles
+                        pedido={selectedPedido}
+                        onClickStep={isPdfPedido ? handleUpdateStatus : undefined}
+                        disabled={updatingStatus || cancelingPedido || !isPdfPedido}
+                      />
+
+                      {(updatingStatus || cancelingPedido) && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" /> {cancelingPedido ? 'Cancelando...' : 'Atualizando...'}
+                        </div>
                       )}
                     </div>
-
-                    <StatusProgressCircles
-                      pedido={selectedPedido}
-                      onClickStep={handleUpdateStatus}
-                      disabled={updatingStatus || cancelingPedido}
-                    />
-
-                    {(updatingStatus || cancelingPedido) && (
-                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" /> {cancelingPedido ? 'Cancelando...' : 'Atualizando...'}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+                  </>
+                );
+              })()}
             </div>
           )}
         </DialogContent>
