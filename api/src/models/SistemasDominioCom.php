@@ -84,7 +84,7 @@ class SistemasDominioCom extends BaseModel {
         $where = [];
         $params = [];
 
-        if ($status && in_array($status, ['registrado', 'cancelado'], true)) {
+        if ($status && in_array($status, ['registrado', 'em_propagacao', 'finalizado', 'cancelado'], true)) {
             $where[] = 'status = ?';
             $params[] = $status;
         }
