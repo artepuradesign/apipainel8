@@ -470,6 +470,12 @@ const AdminPedidos = () => {
   const handleUpdateStatus = async (newStatus: PdfRgStatus) => {
     if (!selectedPedido) return;
 
+    const isPdfPedido = selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado';
+    if (!isPdfPedido) {
+      toast.info('Para este tipo de pedido, apenas o cancelamento está disponível neste painel.');
+      return;
+    }
+
     if (newStatus === 'entregue' && !pdfFile && !getExistingPdfNome()) {
       toast.error('É obrigatório enviar o arquivo PDF para marcar como Entregue.');
       return;
