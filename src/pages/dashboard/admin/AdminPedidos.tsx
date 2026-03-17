@@ -1235,6 +1235,19 @@ const AdminPedidos = () => {
                         )}
                       </div>
 
+                      {selectedPedido.type === 'vps-6' && (
+                        <div className="space-y-1">
+                          <Label htmlFor="workflow-ip" className="text-xs text-muted-foreground">IP para entrega da VPS</Label>
+                          <Input
+                            id="workflow-ip"
+                            placeholder="Ex.: 172.20.10.15"
+                            value={workflowIp}
+                            onChange={(e) => setWorkflowIp(e.target.value)}
+                            disabled={updatingStatus || cancelingPedido}
+                          />
+                        </div>
+                      )}
+
                       <StatusProgressCircles
                         pedido={selectedPedido}
                         onClickStep={isPdfPedido || selectedPedido.type === 'dominio-com' || selectedPedido.type === 'vps-6' ? handleUpdateStatus : undefined}
