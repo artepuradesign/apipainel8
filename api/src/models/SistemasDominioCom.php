@@ -144,6 +144,33 @@ class SistemasDominioCom extends BaseModel {
         return $stmt->execute([$id]);
     }
 
+    public function updateAdminWorkflow(int $id, string $status): array {
+        $allowedStatuses = ['registrado', 'em_propagacao', 'finalizado'];
+        if (!in_array($status, $allowedStatuses, true)) {
+            throw new Exception('Status inválido para controle administrativo');
+        }
+
+        $stmt = $this->db->prepare(
+            "UPDATE {$this->table} SET status = ?, updated_at = NOW() WHERE id = ? AND status <> 'cancelado'"
+        );
+        $stmt->execute([$status, $id]);
+
+        $rowStmt = $this->db->prepare(
+            "SELECT id, module_id, user_id, nome_solicitante, dominio_nome, dominio_completo, status, valor_cobrado, desconto_aplicado, saldo_usado, created_at, updated_at
+             FROM {$this->table}
+             WHERE id = ?
+             LIMIT 1"
+        );
+        $rowStmt->execute([$id]);
+        $row = $rowStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            throw new Exception('Pedido não encontrado');
+        }
+
+        return $row;
+    }
+
     public function registerDomain(array $data, int $userId): array {
         $nomeSolicitante = trim((string)($data['nome_solicitante'] ?? ''));
         if ($nomeSolicitante === '' || strlen($nomeSolicitante) > 150) {
