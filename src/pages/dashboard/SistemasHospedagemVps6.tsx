@@ -156,7 +156,7 @@ const SistemasHospedagemVps6 = () => {
         return;
       }
 
-      toast.success(`VPS criada com sucesso! IP liberado: ${result.data.ip_vps}`);
+      toast.success('Pedido de VPS criado! Você receberá por e-mail as configurações e o IP após a etapa de configuração.');
       setShowConfirmModal(false);
       setNomeInstancia('');
       await reloadBalance();
