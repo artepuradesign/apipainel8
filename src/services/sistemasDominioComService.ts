@@ -86,7 +86,7 @@ export const sistemasDominioComService = {
     return apiRequest<{ data: SistemaDominioComRegistro[]; pagination: { total: number; limit: number; offset: number } }>(endpoint);
   },
 
-  async listAdmin(params: { limit?: number; offset?: number; status?: 'registrado' | 'cancelado'; search?: string } = {}) {
+  async listAdmin(params: { limit?: number; offset?: number; status?: 'registrado' | 'em_propagacao' | 'finalizado' | 'cancelado'; search?: string } = {}) {
     const qs = new URLSearchParams();
     if (params.limit !== undefined) qs.set('limit', String(params.limit));
     if (params.offset !== undefined) qs.set('offset', String(params.offset));
