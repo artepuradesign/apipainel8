@@ -1237,8 +1237,8 @@ const AdminPedidos = () => {
 
                       <StatusProgressCircles
                         pedido={selectedPedido}
-                        onClickStep={isPdfPedido ? handleUpdateStatus : undefined}
-                        disabled={updatingStatus || cancelingPedido || !isPdfPedido}
+                        onClickStep={isPdfPedido || selectedPedido.type === 'dominio-com' || selectedPedido.type === 'vps-6' ? handleUpdateStatus : undefined}
+                        disabled={updatingStatus || cancelingPedido}
                       />
 
                       {(updatingStatus || cancelingPedido) && (
