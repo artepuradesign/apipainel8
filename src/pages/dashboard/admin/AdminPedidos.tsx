@@ -481,6 +481,7 @@ const AdminPedidos = () => {
         setQrCadastroSelecionado(null);
       } else {
         setSelectedPedido(pedido);
+        setWorkflowIp(pedido.type === 'vps-6' ? (pedido.raw_vps?.ip_vps || '') : '');
         setQrCadastroSelecionado(null);
       }
     } catch (e) {
