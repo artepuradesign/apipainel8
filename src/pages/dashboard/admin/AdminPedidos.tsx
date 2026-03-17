@@ -338,21 +338,20 @@ const AdminPedidos = () => {
       }
 
       // Fetch domínio/vps orders
-      const mappedModuleStatus = statusFilter === 'all'
-        ? undefined
-        : (statusFilter === 'cancelado' ? 'cancelado' : 'registrado');
-
       if (typeFilter === 'all' || typeFilter === 'dominio-com') {
+        const domainStatusFilter = getModuleFilterStatus('dominio-com', statusFilter);
         const res3 = await sistemasDominioComService.listAdmin({
           limit: 50,
           offset: 0,
           ...(search ? { search } : {}),
-          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
+          ...(domainStatusFilter ? { status: domainStatusFilter } : {}),
         });
 
         if (res3.success && res3.data) {
           res3.data.data.forEach((d: SistemaDominioComRegistro) => {
-            const mappedStatus: PdfRgStatus = d.status === 'cancelado' ? 'cancelado' : 'pagamento_confirmado';
+            const mappedStatus = mapModuleStatusToUnified('dominio-com', d.status as ModuleWorkflowStatus);
+            const statusTimestamp = d.updated_at || d.created_at;
+
             results.push({
               type: 'dominio-com',
               id: d.id,
@@ -362,9 +361,9 @@ const AdminPedidos = () => {
               created_at: d.created_at,
               preco_pago: Number(d.valor_cobrado || 0),
               realizado_at: d.created_at,
-              pagamento_confirmado_at: d.created_at,
-              em_confeccao_at: null,
-              entregue_at: null,
+              pagamento_confirmado_at: d.status === 'cancelado' ? null : d.created_at,
+              em_confeccao_at: mappedStatus === 'em_confeccao' || mappedStatus === 'entregue' ? statusTimestamp : null,
+              entregue_at: mappedStatus === 'entregue' ? statusTimestamp : null,
               raw_dominio: d,
             });
           });
@@ -377,7 +376,7 @@ const AdminPedidos = () => {
           limit: 50,
           offset: 0,
           ...(search ? { search } : {}),
-          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
+          ...(statusFilter === 'cancelado' ? { status: 'cancelado' } : {}),
         });
 
         if (res4.success && res4.data) {
@@ -392,7 +391,7 @@ const AdminPedidos = () => {
               created_at: d.created_at,
               preco_pago: Number(d.valor_cobrado || 0),
               realizado_at: d.created_at,
-              pagamento_confirmado_at: d.created_at,
+              pagamento_confirmado_at: d.status === 'cancelado' ? null : d.created_at,
               em_confeccao_at: null,
               entregue_at: null,
               raw_dominio_br: d,
@@ -403,28 +402,31 @@ const AdminPedidos = () => {
       }
 
       if (typeFilter === 'all' || typeFilter === 'vps-6') {
+        const vpsStatusFilter = getModuleFilterStatus('vps-6', statusFilter);
         const res5 = await sistemasHospedagemVps6Service.listAdmin({
           limit: 50,
           offset: 0,
           ...(search ? { search } : {}),
-          ...(mappedModuleStatus ? { status: mappedModuleStatus } : {}),
+          ...(vpsStatusFilter ? { status: vpsStatusFilter } : {}),
         });
 
         if (res5.success && res5.data) {
           res5.data.data.forEach((vps: SistemaHospedagemVps6Registro) => {
-            const mappedStatus: PdfRgStatus = vps.status === 'cancelado' ? 'cancelado' : 'pagamento_confirmado';
+            const mappedStatus = mapModuleStatusToUnified('vps-6', vps.status as ModuleWorkflowStatus);
+            const statusTimestamp = vps.updated_at || vps.created_at;
+
             results.push({
               type: 'vps-6',
               id: vps.id,
               status: mappedStatus,
               label: vps.nome_instancia,
-              sublabel: `IP: ${vps.ip_vps}`,
+              sublabel: `IP: ${vps.ip_vps?.trim() ? vps.ip_vps : 'pendente'}`,
               created_at: vps.created_at,
               preco_pago: Number(vps.valor_cobrado || 0),
               realizado_at: vps.created_at,
-              pagamento_confirmado_at: vps.created_at,
-              em_confeccao_at: null,
-              entregue_at: null,
+              pagamento_confirmado_at: vps.status === 'cancelado' ? null : vps.created_at,
+              em_confeccao_at: mappedStatus === 'em_confeccao' || mappedStatus === 'entregue' ? statusTimestamp : null,
+              entregue_at: mappedStatus === 'entregue' ? statusTimestamp : null,
               raw_vps: vps,
             });
           });
