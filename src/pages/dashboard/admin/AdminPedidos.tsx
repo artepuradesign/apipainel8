@@ -1019,8 +1019,6 @@ const AdminPedidos = () => {
 
                 return (
                   <>
-                    <StatusProgressCircles pedido={selectedPedido} />
-
                     {renderDetailContent()}
                     {renderAnexos()}
 
