@@ -174,7 +174,7 @@ const SistemasHospedagemVps6 = () => {
       <div className="w-full">
         <SimpleTitleBar
           title="VPS 6 MESES"
-          subtitle="Contrate sua VPS com IP dedicado e configuração Linux padrão"
+          subtitle="Após a compra, as configurações e IP serão enviados por e-mail após configuração do administrador"
           onBack={() => navigate('/dashboard')}
           icon={<Server className="h-5 w-5" />}
         />
