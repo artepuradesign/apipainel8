@@ -1216,6 +1216,8 @@ const AdminPedidos = () => {
                           <p className="text-xs text-muted-foreground">
                             {isPdfPedido
                               ? 'Clique em uma etapa para atualizar o status do pedido.'
+                              : (selectedPedido.type === 'dominio-com' || selectedPedido.type === 'vps-6')
+                              ? 'Admin/suporte pode atualizar o fluxo até a finalização.'
                               : 'Para este tipo de pedido, o controle disponível é o cancelamento.'}
                           </p>
                         </div>
