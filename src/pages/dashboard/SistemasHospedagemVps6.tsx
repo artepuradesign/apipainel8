@@ -273,11 +273,19 @@ const SistemasHospedagemVps6 = () => {
                       <div key={registro.id} className="px-4 py-2.5 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-medium truncate">{registro.nome_instancia}</p>
-                          <Badge variant={registro.status === 'registrado' ? 'secondary' : 'outline'} className="text-[10px]">
-                            {registro.status}
+                          <Badge variant={registro.status === 'finalizado' ? 'default' : 'secondary'} className="text-[10px]">
+                            {registro.status === 'registrado'
+                              ? 'Pagamento confirmado'
+                              : registro.status === 'em_configuracao'
+                              ? 'Em configuração'
+                              : registro.status === 'finalizado'
+                              ? 'Finalizado'
+                              : 'Cancelado'}
                           </Badge>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-1">IP: {registro.ip_vps}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          IP: {registro.ip_vps?.trim() ? registro.ip_vps : 'Será enviado por e-mail após configuração'}
+                        </p>
                         <p className="text-[10px] text-muted-foreground">{registro.configuracao_linux}</p>
                         <p className="text-[10px] text-muted-foreground">{new Date(registro.created_at).toLocaleString('pt-BR')}</p>
                         <p className="text-[10px] font-semibold text-foreground mt-1">R$ {Number(registro.valor_cobrado).toFixed(2).replace('.', ',')}</p>
