@@ -304,7 +304,8 @@ const SistemasHospedagemVps6 = () => {
           <DialogHeader>
             <DialogTitle>Confirmar contratação da VPS</DialogTitle>
             <DialogDescription>
-              Você está prestes a contratar uma VPS de 6 meses para <strong>{nomeSolicitante}</strong>.
+              Você está prestes a contratar uma VPS de 6 meses para <strong>{nomeSolicitante}</strong>. Após confirmação,
+              o IP e as credenciais serão enviados por e-mail quando o administrador finalizar a configuração.
             </DialogDescription>
           </DialogHeader>
 
