@@ -336,8 +336,14 @@ const SistemasDominioCom = () => {
                       <div key={registro.id} className="px-4 py-2.5 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-medium truncate">{registro.dominio_completo}</p>
-                          <Badge variant={registro.status === 'registrado' ? 'secondary' : 'outline'} className="text-[10px]">
-                            {registro.status}
+                          <Badge variant={registro.status === 'finalizado' ? 'default' : 'secondary'} className="text-[10px]">
+                            {registro.status === 'registrado'
+                              ? 'Pagamento confirmado'
+                              : registro.status === 'em_propagacao'
+                              ? 'Em propagação'
+                              : registro.status === 'finalizado'
+                              ? 'Finalizado'
+                              : 'Cancelado'}
                           </Badge>
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-1">Solicitante: {registro.nome_solicitante}</p>

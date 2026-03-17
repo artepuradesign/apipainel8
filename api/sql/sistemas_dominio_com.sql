@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS sistemas_dominio_com (
     nome_solicitante VARCHAR(150) NOT NULL,
     dominio_nome VARCHAR(63) NOT NULL,
     dominio_completo VARCHAR(67) NOT NULL,
-    status ENUM('registrado', 'cancelado') NOT NULL DEFAULT 'registrado',
+    status ENUM('registrado', 'em_propagacao', 'finalizado', 'cancelado') NOT NULL DEFAULT 'registrado',
     valor_cobrado DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     desconto_aplicado DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     saldo_usado ENUM('plano', 'carteira', 'misto') NOT NULL DEFAULT 'carteira',

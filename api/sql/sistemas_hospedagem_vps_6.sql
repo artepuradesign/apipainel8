@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS sistemas_hospedagem_vps_6 (
     ip_vps VARCHAR(45) NOT NULL,
     configuracao_linux VARCHAR(255) NOT NULL DEFAULT 'Ubuntu 22.04 LTS + Docker + UFW',
     duracao_meses TINYINT UNSIGNED NOT NULL DEFAULT 6,
-    status ENUM('registrado', 'cancelado') NOT NULL DEFAULT 'registrado',
+    status ENUM('registrado', 'em_configuracao', 'finalizado', 'cancelado') NOT NULL DEFAULT 'registrado',
     valor_cobrado DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     desconto_aplicado DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     saldo_usado ENUM('plano', 'carteira', 'misto') NOT NULL DEFAULT 'carteira',

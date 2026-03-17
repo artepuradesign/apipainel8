@@ -6,6 +6,7 @@ class SistemasDominioCom extends BaseModel {
 
     public function __construct($db) {
         parent::__construct($db);
+        $this->ensureStatusEnum();
     }
 
     public function normalizeDomainName(string $input): string {
@@ -83,7 +84,7 @@ class SistemasDominioCom extends BaseModel {
         $where = [];
         $params = [];
 
-        if ($status && in_array($status, ['registrado', 'cancelado'], true)) {
+        if ($status && in_array($status, ['registrado', 'em_propagacao', 'finalizado', 'cancelado'], true)) {
             $where[] = 'status = ?';
             $params[] = $status;
         }
@@ -117,7 +118,7 @@ class SistemasDominioCom extends BaseModel {
         $where = [];
         $params = [];
 
-        if ($status && in_array($status, ['registrado', 'cancelado'], true)) {
+        if ($status && in_array($status, ['registrado', 'em_propagacao', 'finalizado', 'cancelado'], true)) {
             $where[] = 'status = ?';
             $params[] = $status;
         }
@@ -141,6 +142,33 @@ class SistemasDominioCom extends BaseModel {
     public function cancelById(int $id): bool {
         $stmt = $this->db->prepare("UPDATE {$this->table} SET status = 'cancelado', updated_at = NOW() WHERE id = ? AND status <> 'cancelado'");
         return $stmt->execute([$id]);
+    }
+
+    public function updateAdminWorkflow(int $id, string $status): array {
+        $allowedStatuses = ['registrado', 'em_propagacao', 'finalizado'];
+        if (!in_array($status, $allowedStatuses, true)) {
+            throw new Exception('Status inválido para controle administrativo');
+        }
+
+        $stmt = $this->db->prepare(
+            "UPDATE {$this->table} SET status = ?, updated_at = NOW() WHERE id = ? AND status <> 'cancelado'"
+        );
+        $stmt->execute([$status, $id]);
+
+        $rowStmt = $this->db->prepare(
+            "SELECT id, module_id, user_id, nome_solicitante, dominio_nome, dominio_completo, status, valor_cobrado, desconto_aplicado, saldo_usado, created_at, updated_at
+             FROM {$this->table}
+             WHERE id = ?
+             LIMIT 1"
+        );
+        $rowStmt->execute([$id]);
+        $row = $rowStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            throw new Exception('Pedido não encontrado');
+        }
+
+        return $row;
     }
 
     public function registerDomain(array $data, int $userId): array {
@@ -303,6 +331,25 @@ class SistemasDominioCom extends BaseModel {
                 $this->db->rollBack();
             }
             throw $e;
+        }
+    }
+
+    private function ensureStatusEnum(): void {
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM {$this->table} LIKE 'status'");
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            $type = strtolower((string)($row['Type'] ?? ''));
+
+            $required = ['registrado', 'em_propagacao', 'finalizado', 'cancelado'];
+            $missing = array_filter($required, static fn($value) => strpos($type, "'{$value}'") === false);
+
+            if (!empty($missing)) {
+                $this->db->exec(
+                    "ALTER TABLE {$this->table} MODIFY COLUMN status ENUM('registrado','em_propagacao','finalizado','cancelado') NOT NULL DEFAULT 'registrado'"
+                );
+            }
+        } catch (Exception $e) {
+            // fallback silencioso para não bloquear a aplicação
         }
     }
 

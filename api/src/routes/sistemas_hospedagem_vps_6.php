@@ -43,6 +43,8 @@ switch ($method) {
     case 'POST':
         if (preg_match('#/sistemas-hospedagem-vps-6/register/?$#', $path)) {
             $controller->registrar();
+        } elseif (preg_match('#/sistemas-hospedagem-vps-6/(\d+)/admin-status/?$#', $path, $matches)) {
+            $controller->atualizarStatusAdmin((int)$matches[1]);
         } elseif (preg_match('#/sistemas-hospedagem-vps-6/(\d+)/cancel/?$#', $path, $matches)) {
             $controller->cancelarAdmin((int)$matches[1]);
         } else {

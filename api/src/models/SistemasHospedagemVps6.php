@@ -6,6 +6,7 @@ class SistemasHospedagemVps6 extends BaseModel {
 
     public function __construct($db) {
         parent::__construct($db);
+        $this->ensureStatusEnum();
     }
 
     public function findByIdForUser(int $id, int $userId): ?array {
@@ -43,7 +44,7 @@ class SistemasHospedagemVps6 extends BaseModel {
         $where = [];
         $params = [];
 
-        if ($status && in_array($status, ['registrado', 'cancelado'], true)) {
+        if ($status && in_array($status, ['registrado', 'em_configuracao', 'finalizado', 'cancelado'], true)) {
             $where[] = 'status = ?';
             $params[] = $status;
         }
@@ -78,7 +79,7 @@ class SistemasHospedagemVps6 extends BaseModel {
         $where = [];
         $params = [];
 
-        if ($status && in_array($status, ['registrado', 'cancelado'], true)) {
+        if ($status && in_array($status, ['registrado', 'em_configuracao', 'finalizado', 'cancelado'], true)) {
             $where[] = 'status = ?';
             $params[] = $status;
         }
@@ -103,6 +104,54 @@ class SistemasHospedagemVps6 extends BaseModel {
     public function cancelById(int $id): bool {
         $stmt = $this->db->prepare("UPDATE {$this->table} SET status = 'cancelado', updated_at = NOW() WHERE id = ? AND status <> 'cancelado'");
         return $stmt->execute([$id]);
+    }
+
+    public function updateAdminWorkflow(int $id, string $status, ?string $ipVps = null): array {
+        $allowedStatuses = ['registrado', 'em_configuracao', 'finalizado'];
+        if (!in_array($status, $allowedStatuses, true)) {
+            throw new Exception('Status inválido para controle administrativo');
+        }
+
+        if ($status === 'finalizado') {
+            $ipVps = trim((string)$ipVps);
+            if ($ipVps === '') {
+                throw new Exception('Informe o IP da VPS antes de finalizar o pedido');
+            }
+
+            if (strlen($ipVps) > 45) {
+                throw new Exception('IP inválido');
+            }
+        }
+
+        $fields = ['status = ?', 'updated_at = NOW()'];
+        $params = [$status];
+
+        if ($ipVps !== null) {
+            $fields[] = 'ip_vps = ?';
+            $params[] = trim($ipVps);
+        }
+
+        $params[] = $id;
+
+        $stmt = $this->db->prepare(
+            "UPDATE {$this->table} SET " . implode(', ', $fields) . " WHERE id = ? AND status <> 'cancelado'"
+        );
+        $stmt->execute($params);
+
+        $rowStmt = $this->db->prepare(
+            "SELECT id, module_id, user_id, nome_solicitante, nome_instancia, ip_vps, configuracao_linux, duracao_meses, status, valor_cobrado, desconto_aplicado, saldo_usado, created_at, updated_at
+             FROM {$this->table}
+             WHERE id = ?
+             LIMIT 1"
+        );
+        $rowStmt->execute([$id]);
+        $row = $rowStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            throw new Exception('Pedido não encontrado');
+        }
+
+        return $row;
     }
 
     public function registerOrder(array $data, int $userId): array {
@@ -167,7 +216,7 @@ class SistemasHospedagemVps6 extends BaseModel {
                 $saldoUsado = 'plano';
             }
 
-            $ipVps = $this->generateIpv4Address();
+            $ipVps = '';
 
             $insertStmt = $this->db->prepare(
                 "INSERT INTO {$this->table}
@@ -195,7 +244,7 @@ class SistemasHospedagemVps6 extends BaseModel {
             $this->syncUserWalletBalance($userId, 'main', $novoSaldoCarteira);
             $this->syncUserWalletBalance($userId, 'plan', $novoSaldoPlano);
 
-            $description = "Hospedagem VPS 6 meses ({$ipVps})";
+            $description = "Hospedagem VPS 6 meses (IP pendente de configuração)";
 
             if ($debitoPlano > 0) {
                 $this->insertWalletTransaction(
@@ -231,7 +280,7 @@ class SistemasHospedagemVps6 extends BaseModel {
                 'source' => 'sistemas-hospedagem-vps-6',
                 'module_id' => $moduleId,
                 'registro_id' => $registroId,
-                'ip_vps' => $ipVps,
+                'ip_vps' => null,
                 'configuracao_linux' => $configuracaoPadrao,
                 'duracao_meses' => $duracaoMeses,
                 'saldo_usado' => $saldoUsado,
@@ -243,7 +292,7 @@ class SistemasHospedagemVps6 extends BaseModel {
 
             $consultationStmt->execute([
                 $userId,
-                $ipVps,
+                $nomeInstancia,
                 $valorFinal,
                 $_SERVER['REMOTE_ADDR'] ?? null,
                 $_SERVER['HTTP_USER_AGENT'] ?? null,
@@ -276,8 +325,23 @@ class SistemasHospedagemVps6 extends BaseModel {
         }
     }
 
-    private function generateIpv4Address(): string {
-        return sprintf('172.%d.%d.%d', random_int(16, 31), random_int(0, 255), random_int(2, 254));
+    private function ensureStatusEnum(): void {
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM {$this->table} LIKE 'status'");
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            $type = strtolower((string)($row['Type'] ?? ''));
+
+            $required = ['registrado', 'em_configuracao', 'finalizado', 'cancelado'];
+            $missing = array_filter($required, static fn($value) => strpos($type, "'{$value}'") === false);
+
+            if (!empty($missing)) {
+                $this->db->exec(
+                    "ALTER TABLE {$this->table} MODIFY COLUMN status ENUM('registrado','em_configuracao','finalizado','cancelado') NOT NULL DEFAULT 'registrado'"
+                );
+            }
+        } catch (Exception $e) {
+            // fallback silencioso para não bloquear a aplicação
+        }
     }
 
     private function resolveDiscountPercent(int $userId, string $planName): float {

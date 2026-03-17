@@ -8,7 +8,7 @@ export interface SistemaDominioComRegistro {
   nome_solicitante: string;
   dominio_nome: string;
   dominio_completo: string;
-  status: 'registrado' | 'cancelado';
+  status: 'registrado' | 'em_propagacao' | 'finalizado' | 'cancelado';
   valor_cobrado: number;
   desconto_aplicado: number;
   saldo_usado: 'plano' | 'carteira' | 'misto';
@@ -86,7 +86,7 @@ export const sistemasDominioComService = {
     return apiRequest<{ data: SistemaDominioComRegistro[]; pagination: { total: number; limit: number; offset: number } }>(endpoint);
   },
 
-  async listAdmin(params: { limit?: number; offset?: number; status?: 'registrado' | 'cancelado'; search?: string } = {}) {
+  async listAdmin(params: { limit?: number; offset?: number; status?: 'registrado' | 'em_propagacao' | 'finalizado' | 'cancelado'; search?: string } = {}) {
     const qs = new URLSearchParams();
     if (params.limit !== undefined) qs.set('limit', String(params.limit));
     if (params.offset !== undefined) qs.set('offset', String(params.offset));
@@ -100,6 +100,13 @@ export const sistemasDominioComService = {
   async cancelByAdmin(id: number) {
     return apiRequest<{ id: number; status: 'cancelado' }>(`/sistemas-dominio-com/${id}/cancel`, {
       method: 'POST',
+    });
+  },
+
+  async updateStatusByAdmin(id: number, payload: { status: 'registrado' | 'em_propagacao' | 'finalizado' }) {
+    return apiRequest<SistemaDominioComRegistro>(`/sistemas-dominio-com/${id}/admin-status`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   },
 

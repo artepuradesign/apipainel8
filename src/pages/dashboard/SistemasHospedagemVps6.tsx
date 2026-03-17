@@ -156,7 +156,7 @@ const SistemasHospedagemVps6 = () => {
         return;
       }
 
-      toast.success(`VPS criada com sucesso! IP liberado: ${result.data.ip_vps}`);
+      toast.success('Pedido de VPS criado! Você receberá por e-mail as configurações e o IP após a etapa de configuração.');
       setShowConfirmModal(false);
       setNomeInstancia('');
       await reloadBalance();
@@ -174,7 +174,7 @@ const SistemasHospedagemVps6 = () => {
       <div className="w-full">
         <SimpleTitleBar
           title="VPS 6 MESES"
-          subtitle="Contrate sua VPS com IP dedicado e configuração Linux padrão"
+          subtitle="Após a compra, as configurações e IP serão enviados por e-mail após configuração do administrador"
           onBack={() => navigate('/dashboard')}
           icon={<Server className="h-5 w-5" />}
         />
@@ -273,11 +273,19 @@ const SistemasHospedagemVps6 = () => {
                       <div key={registro.id} className="px-4 py-2.5 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-medium truncate">{registro.nome_instancia}</p>
-                          <Badge variant={registro.status === 'registrado' ? 'secondary' : 'outline'} className="text-[10px]">
-                            {registro.status}
+                          <Badge variant={registro.status === 'finalizado' ? 'default' : 'secondary'} className="text-[10px]">
+                            {registro.status === 'registrado'
+                              ? 'Pagamento confirmado'
+                              : registro.status === 'em_configuracao'
+                              ? 'Em configuração'
+                              : registro.status === 'finalizado'
+                              ? 'Finalizado'
+                              : 'Cancelado'}
                           </Badge>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-1">IP: {registro.ip_vps}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          IP: {registro.ip_vps?.trim() ? registro.ip_vps : 'Será enviado por e-mail após configuração'}
+                        </p>
                         <p className="text-[10px] text-muted-foreground">{registro.configuracao_linux}</p>
                         <p className="text-[10px] text-muted-foreground">{new Date(registro.created_at).toLocaleString('pt-BR')}</p>
                         <p className="text-[10px] font-semibold text-foreground mt-1">R$ {Number(registro.valor_cobrado).toFixed(2).replace('.', ',')}</p>
@@ -296,7 +304,8 @@ const SistemasHospedagemVps6 = () => {
           <DialogHeader>
             <DialogTitle>Confirmar contratação da VPS</DialogTitle>
             <DialogDescription>
-              Você está prestes a contratar uma VPS de 6 meses para <strong>{nomeSolicitante}</strong>.
+              Você está prestes a contratar uma VPS de 6 meses para <strong>{nomeSolicitante}</strong>. Após confirmação,
+              o IP e as credenciais serão enviados por e-mail quando o administrador finalizar a configuração.
             </DialogDescription>
           </DialogHeader>
 
