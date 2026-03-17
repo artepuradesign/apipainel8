@@ -6,6 +6,7 @@ class SistemasDominioCom extends BaseModel {
 
     public function __construct($db) {
         parent::__construct($db);
+        $this->ensureStatusEnum();
     }
 
     public function normalizeDomainName(string $input): string {
