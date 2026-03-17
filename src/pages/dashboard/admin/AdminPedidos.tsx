@@ -47,6 +47,58 @@ const statusColors: Record<PdfRgStatus, string> = {
   cancelado: 'bg-destructive/10 text-destructive border-destructive/30',
 };
 
+type ModuleWorkflowStatus = 'registrado' | 'em_configuracao' | 'em_propagacao' | 'finalizado' | 'cancelado';
+
+const getStepLabelByType = (pedidoType: UnifiedPedido['type'], step: ActivePedidoStatus) => {
+  if (step === 'em_confeccao') {
+    if (pedidoType === 'vps-6') return 'Em Configuração';
+    if (pedidoType === 'dominio-com') return 'Em Propagação';
+    return statusLabels[step];
+  }
+
+  if (step === 'entregue' && (pedidoType === 'vps-6' || pedidoType === 'dominio-com')) {
+    return 'Finalizado';
+  }
+
+  return statusLabels[step];
+};
+
+const mapModuleStatusToUnified = (pedidoType: UnifiedPedido['type'], status: ModuleWorkflowStatus): PdfRgStatus => {
+  if (status === 'cancelado') return 'cancelado';
+  if (status === 'finalizado') return 'entregue';
+
+  if (pedidoType === 'vps-6' && status === 'em_configuracao') return 'em_confeccao';
+  if (pedidoType === 'dominio-com' && status === 'em_propagacao') return 'em_confeccao';
+
+  return 'pagamento_confirmado';
+};
+
+const mapUnifiedToModuleStatus = (pedidoType: UnifiedPedido['type'], status: PdfRgStatus): ModuleWorkflowStatus | null => {
+  if (status === 'cancelado') return 'cancelado';
+  if (status === 'entregue') return 'finalizado';
+  if (status === 'em_confeccao') {
+    if (pedidoType === 'vps-6') return 'em_configuracao';
+    if (pedidoType === 'dominio-com') return 'em_propagacao';
+  }
+  if (status === 'pagamento_confirmado' || status === 'realizado') return 'registrado';
+
+  return null;
+};
+
+const getModuleFilterStatus = (pedidoType: UnifiedPedido['type'], unifiedStatusFilter: string): ModuleWorkflowStatus | undefined => {
+  if (unifiedStatusFilter === 'all') return undefined;
+  if (unifiedStatusFilter === 'cancelado') return 'cancelado';
+  if (unifiedStatusFilter === 'entregue') return 'finalizado';
+  if (unifiedStatusFilter === 'em_confeccao') {
+    if (pedidoType === 'vps-6') return 'em_configuracao';
+    if (pedidoType === 'dominio-com') return 'em_propagacao';
+    return undefined;
+  }
+  if (unifiedStatusFilter === 'pagamento_confirmado' || unifiedStatusFilter === 'realizado') return 'registrado';
+
+  return undefined;
+};
+
 const formatDateBR = (dateStr: string | null) => {
   if (!dateStr) return '—';
   const parts = dateStr.split('-');
