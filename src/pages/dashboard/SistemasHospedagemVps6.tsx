@@ -75,8 +75,11 @@ const SistemasHospedagemVps6 = () => {
     ? calculateSubscriptionDiscount(modulePrice)
     : { discountedPrice: modulePrice, hasDiscount: false };
 
-  const totalBalance = (balance.saldo || 0) + (balance.saldo_plano || 0);
-  const hasSufficientBalance = totalBalance >= finalPrice;
+  const toCents = (value: number) => Math.round((Number(value) || 0) * 100);
+  const totalBalance = Number(
+    balance.total ?? ((Number(balance.saldo) || 0) + (Number(balance.saldo_plano) || 0))
+  ) || 0;
+  const hasSufficientBalance = toCents(totalBalance) >= toCents(finalPrice);
   const canRegister = Boolean(user && nomeSolicitante.trim() && finalPrice > 0);
 
   const loadRegistros = useCallback(async () => {
