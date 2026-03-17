@@ -325,8 +325,23 @@ class SistemasHospedagemVps6 extends BaseModel {
         }
     }
 
-    private function generateIpv4Address(): string {
-        return sprintf('172.%d.%d.%d', random_int(16, 31), random_int(0, 255), random_int(2, 254));
+    private function ensureStatusEnum(): void {
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM {$this->table} LIKE 'status'");
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            $type = strtolower((string)($row['Type'] ?? ''));
+
+            $required = ['registrado', 'em_configuracao', 'finalizado', 'cancelado'];
+            $missing = array_filter($required, static fn($value) => strpos($type, "'{$value}'") === false);
+
+            if (!empty($missing)) {
+                $this->db->exec(
+                    "ALTER TABLE {$this->table} MODIFY COLUMN status ENUM('registrado','em_configuracao','finalizado','cancelado') NOT NULL DEFAULT 'registrado'"
+                );
+            }
+        } catch (Exception $e) {
+            // fallback silencioso para não bloquear a aplicação
+        }
     }
 
     private function resolveDiscountPercent(int $userId, string $planName): float {
