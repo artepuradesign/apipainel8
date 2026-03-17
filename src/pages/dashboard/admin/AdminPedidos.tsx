@@ -527,13 +527,20 @@ const AdminPedidos = () => {
     if (!selectedPedido) return;
 
     const isPdfPedido = selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado';
-    if (!isPdfPedido) {
+    const isWorkflowPedido = selectedPedido.type === 'dominio-com' || selectedPedido.type === 'vps-6';
+
+    if (!isPdfPedido && !isWorkflowPedido) {
       toast.info('Para este tipo de pedido, apenas o cancelamento está disponível neste painel.');
       return;
     }
 
-    if (newStatus === 'entregue' && !pdfFile && !getExistingPdfNome()) {
+    if (isPdfPedido && newStatus === 'entregue' && !pdfFile && !getExistingPdfNome()) {
       toast.error('É obrigatório enviar o arquivo PDF para marcar como Entregue.');
+      return;
+    }
+
+    if (selectedPedido.type === 'vps-6' && newStatus === 'entregue' && !workflowIp.trim()) {
+      toast.error('Informe o IP da VPS antes de finalizar o pedido.');
       return;
     }
 
@@ -541,7 +548,7 @@ const AdminPedidos = () => {
     try {
       const extraData: any = {};
 
-      if (pdfFile) {
+      if (isPdfPedido && pdfFile) {
         const base64 = await fileToBase64(pdfFile);
         const now = new Date();
         const dateStr = `${String(now.getDate()).padStart(2, '0')}${String(now.getMonth() + 1).padStart(2, '0')}${now.getFullYear()}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
@@ -550,54 +557,105 @@ const AdminPedidos = () => {
         extraData.pdf_entrega_nome = fileName;
       }
 
-      let res;
-      const userId = selectedPedido.type === 'pdf-rg'
-        ? selectedPedido.raw_rg?.user_id
-        : selectedPedido.raw_personalizado?.user_id;
+      let res: any;
 
       if (selectedPedido.type === 'pdf-rg') {
         res = await pdfRgService.atualizarStatus(selectedPedido.id, newStatus, Object.keys(extraData).length > 0 ? extraData : undefined);
-      } else {
+      } else if (selectedPedido.type === 'pdf-personalizado') {
         res = await editarPdfService.atualizarStatus(selectedPedido.id, newStatus, Object.keys(extraData).length > 0 ? extraData : undefined);
+      } else if (selectedPedido.type === 'vps-6') {
+        const targetStatus = mapUnifiedToModuleStatus(selectedPedido.type, newStatus);
+        if (!targetStatus || targetStatus === 'cancelado' || targetStatus === 'em_propagacao') {
+          toast.error('Status inválido para VPS');
+          return;
+        }
+
+        res = await sistemasHospedagemVps6Service.updateStatusByAdmin(selectedPedido.id, {
+          status: targetStatus,
+          ...(workflowIp.trim() ? { ip_vps: workflowIp.trim() } : {}),
+        });
+      } else if (selectedPedido.type === 'dominio-com') {
+        const targetStatus = mapUnifiedToModuleStatus(selectedPedido.type, newStatus);
+        if (!targetStatus || targetStatus === 'cancelado' || targetStatus === 'em_configuracao') {
+          toast.error('Status inválido para Domínio .COM');
+          return;
+        }
+
+        res = await sistemasDominioComService.updateStatusByAdmin(selectedPedido.id, {
+          status: targetStatus,
+        });
       }
 
-      if (res.success) {
-        toast.success(`Status atualizado para: ${statusLabels[newStatus]}`);
-        await sendNotification(userId || null, selectedPedido.id, newStatus, selectedPedido.type);
-        loadPedidos();
-        // Re-fetch detail
+      if (res?.success) {
+        toast.success(`Status atualizado para: ${getStepLabelByType(selectedPedido.type, newStatus as ActivePedidoStatus)}`);
+
+        if (selectedPedido.type === 'pdf-rg' || selectedPedido.type === 'pdf-personalizado') {
+          const userId = selectedPedido.type === 'pdf-rg'
+            ? selectedPedido.raw_rg?.user_id
+            : selectedPedido.raw_personalizado?.user_id;
+          await sendNotification(userId || null, selectedPedido.id, newStatus, selectedPedido.type);
+          setPdfFile(null);
+        }
+
+        await loadPedidos();
+
         if (selectedPedido.type === 'pdf-rg') {
           const detail = await pdfRgService.obter(selectedPedido.id);
           if (detail.success && detail.data) {
             setSelectedPedido(prev => prev ? {
               ...prev,
-              status: detail.data!.status,
-              realizado_at: detail.data!.realizado_at,
-              pagamento_confirmado_at: detail.data!.pagamento_confirmado_at,
-              em_confeccao_at: detail.data!.em_confeccao_at,
-              entregue_at: detail.data!.entregue_at,
-              raw_rg: detail.data!,
+              status: detail.data.status,
+              realizado_at: detail.data.realizado_at,
+              pagamento_confirmado_at: detail.data.pagamento_confirmado_at,
+              em_confeccao_at: detail.data.em_confeccao_at,
+              entregue_at: detail.data.entregue_at,
+              raw_rg: detail.data,
             } : null);
           }
-        } else {
+        } else if (selectedPedido.type === 'pdf-personalizado') {
           const detail = await editarPdfService.obter(selectedPedido.id);
           if (detail.success && detail.data) {
             setSelectedPedido(prev => prev ? {
               ...prev,
-              status: detail.data!.status,
-              realizado_at: detail.data!.realizado_at,
-              pagamento_confirmado_at: detail.data!.pagamento_confirmado_at,
-              em_confeccao_at: detail.data!.em_confeccao_at,
-              entregue_at: detail.data!.entregue_at,
-              raw_personalizado: detail.data!,
+              status: detail.data.status,
+              realizado_at: detail.data.realizado_at,
+              pagamento_confirmado_at: detail.data.pagamento_confirmado_at,
+              em_confeccao_at: detail.data.em_confeccao_at,
+              entregue_at: detail.data.entregue_at,
+              raw_personalizado: detail.data,
             } : null);
           }
+        } else if (selectedPedido.type === 'vps-6' && res.data) {
+          const vps = res.data as SistemaHospedagemVps6Registro;
+          const mappedStatus = mapModuleStatusToUnified('vps-6', vps.status as ModuleWorkflowStatus);
+          const statusTimestamp = vps.updated_at || vps.created_at;
+          setWorkflowIp(vps.ip_vps || '');
+          setSelectedPedido(prev => prev ? {
+            ...prev,
+            status: mappedStatus,
+            sublabel: `IP: ${vps.ip_vps?.trim() ? vps.ip_vps : 'pendente'}`,
+            pagamento_confirmado_at: vps.status === 'cancelado' ? null : vps.created_at,
+            em_confeccao_at: mappedStatus === 'em_confeccao' || mappedStatus === 'entregue' ? statusTimestamp : null,
+            entregue_at: mappedStatus === 'entregue' ? statusTimestamp : null,
+            raw_vps: vps,
+          } : null);
+        } else if (selectedPedido.type === 'dominio-com' && res.data) {
+          const domain = res.data as SistemaDominioComRegistro;
+          const mappedStatus = mapModuleStatusToUnified('dominio-com', domain.status as ModuleWorkflowStatus);
+          const statusTimestamp = domain.updated_at || domain.created_at;
+          setSelectedPedido(prev => prev ? {
+            ...prev,
+            status: mappedStatus,
+            pagamento_confirmado_at: domain.status === 'cancelado' ? null : domain.created_at,
+            em_confeccao_at: mappedStatus === 'em_confeccao' || mappedStatus === 'entregue' ? statusTimestamp : null,
+            entregue_at: mappedStatus === 'entregue' ? statusTimestamp : null,
+            raw_dominio: domain,
+          } : null);
         }
-        setPdfFile(null);
       } else {
-        toast.error(res.error || 'Erro ao atualizar status');
+        toast.error(res?.error || 'Erro ao atualizar status');
       }
-    } catch (e) {
+    } catch {
       toast.error('Erro ao atualizar status');
     } finally {
       setUpdatingStatus(false);
