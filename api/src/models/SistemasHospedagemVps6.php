@@ -280,7 +280,7 @@ class SistemasHospedagemVps6 extends BaseModel {
                 'source' => 'sistemas-hospedagem-vps-6',
                 'module_id' => $moduleId,
                 'registro_id' => $registroId,
-                'ip_vps' => $ipVps,
+                'ip_vps' => null,
                 'configuracao_linux' => $configuracaoPadrao,
                 'duracao_meses' => $duracaoMeses,
                 'saldo_usado' => $saldoUsado,
@@ -292,7 +292,7 @@ class SistemasHospedagemVps6 extends BaseModel {
 
             $consultationStmt->execute([
                 $userId,
-                $ipVps,
+                $nomeInstancia,
                 $valorFinal,
                 $_SERVER['REMOTE_ADDR'] ?? null,
                 $_SERVER['HTTP_USER_AGENT'] ?? null,
