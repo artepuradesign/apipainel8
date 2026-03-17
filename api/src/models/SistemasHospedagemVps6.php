@@ -106,6 +106,54 @@ class SistemasHospedagemVps6 extends BaseModel {
         return $stmt->execute([$id]);
     }
 
+    public function updateAdminWorkflow(int $id, string $status, ?string $ipVps = null): array {
+        $allowedStatuses = ['registrado', 'em_configuracao', 'finalizado'];
+        if (!in_array($status, $allowedStatuses, true)) {
+            throw new Exception('Status inválido para controle administrativo');
+        }
+
+        if ($status === 'finalizado') {
+            $ipVps = trim((string)$ipVps);
+            if ($ipVps === '') {
+                throw new Exception('Informe o IP da VPS antes de finalizar o pedido');
+            }
+
+            if (strlen($ipVps) > 45) {
+                throw new Exception('IP inválido');
+            }
+        }
+
+        $fields = ['status = ?', 'updated_at = NOW()'];
+        $params = [$status];
+
+        if ($ipVps !== null) {
+            $fields[] = 'ip_vps = ?';
+            $params[] = trim($ipVps);
+        }
+
+        $params[] = $id;
+
+        $stmt = $this->db->prepare(
+            "UPDATE {$this->table} SET " . implode(', ', $fields) . " WHERE id = ? AND status <> 'cancelado'"
+        );
+        $stmt->execute($params);
+
+        $rowStmt = $this->db->prepare(
+            "SELECT id, module_id, user_id, nome_solicitante, nome_instancia, ip_vps, configuracao_linux, duracao_meses, status, valor_cobrado, desconto_aplicado, saldo_usado, created_at, updated_at
+             FROM {$this->table}
+             WHERE id = ?
+             LIMIT 1"
+        );
+        $rowStmt->execute([$id]);
+        $row = $rowStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            throw new Exception('Pedido não encontrado');
+        }
+
+        return $row;
+    }
+
     public function registerOrder(array $data, int $userId): array {
         $nomeSolicitante = trim((string)($data['nome_solicitante'] ?? ''));
         if ($nomeSolicitante === '' || strlen($nomeSolicitante) > 150) {
