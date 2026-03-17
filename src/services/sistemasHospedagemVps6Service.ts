@@ -98,6 +98,13 @@ export const sistemasHospedagemVps6Service = {
     });
   },
 
+  async updateStatusByAdmin(id: number, payload: { status: 'registrado' | 'em_configuracao' | 'finalizado'; ip_vps?: string }) {
+    return apiRequest<SistemaHospedagemVps6Registro>(`/sistemas-hospedagem-vps-6/${id}/admin-status`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   async getById(id: number) {
     return apiRequest<SistemaHospedagemVps6Registro>(`/sistemas-hospedagem-vps-6/${id}`);
   },
