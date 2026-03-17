@@ -903,7 +903,7 @@ const AdminPedidos = () => {
           <div>
             <span className="text-muted-foreground">Status:</span>{' '}
             <Badge variant="outline" className={statusColors[p.status] || ''}>
-              {statusLabels[p.status] || p.status}
+                        {p.status === 'cancelado' ? statusLabels[p.status] : getStepLabelByType(p.type, p.status as ActivePedidoStatus)}
             </Badge>
           </div>
         </div>
