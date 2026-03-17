@@ -208,7 +208,7 @@ const StatusProgressCircles = ({
                   ? (isEmConfeccao ? 'text-blue-600 font-semibold' : 'text-emerald-600 font-semibold')
                   : 'text-muted-foreground'
               }`}>
-                {statusLabels[step]}
+                {getStepLabelByType(pedido.type, step)}
               </span>
               {timestamp && isActive && (
                 <span className="text-[9px] text-muted-foreground mt-0.5">
